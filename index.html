@@ -208,7 +208,13 @@ function doSearch(){
 }
 function showToast(msg){toast.textContent=msg;toast.classList.add("show");setTimeout(()=>toast.classList.remove("show"),1800)}
 
-document.querySelectorAll(".search-btn").forEach(b=>b.addEventListener("click",()=>openSearch(b.dataset.type)));
+document.querySelectorAll(".search-btn").forEach(b=>b.addEventListener("click",()=>{
+  if(b.dataset.type==="SOP"){
+    window.location.href="https://notebook.google.com/notebook/e11ecb55-02db-4e4b-a03b-f06b5d0a77c7";
+  } else {
+    openSearch(b.dataset.type);
+  }
+}));
 document.getElementById("close").onclick=()=>modal.classList.remove("show");
 modal.addEventListener("click",e=>{if(e.target===modal)modal.classList.remove("show")});
 document.getElementById("doSearch").onclick=doSearch;
