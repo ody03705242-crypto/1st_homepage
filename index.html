@@ -208,11 +208,19 @@ function doSearch(){
 }
 function showToast(msg){toast.textContent=msg;toast.classList.add("show");setTimeout(()=>toast.classList.remove("show"),1800)}
 
+const NOTEBOOK_URLS = {
+  "복무": "https://notebook.google.com/notebook/90fee1fd-e609-48b2-af8f-4546ad40a299",
+  "복지": "https://notebook.google.com/notebook/b437d223-78b3-4f71-b667-3beaa65ecd25",
+  "SOP": "https://notebook.google.com/notebook/e11ecb55-02db-4e4b-a03b-f06b5d0a77c7",
+  "통계": "https://notebook.google.com/notebook/cd94e6f3-81ac-4682-a84d-0b1b0d839ae6"
+};
+
 document.querySelectorAll(".search-btn").forEach(b=>b.addEventListener("click",()=>{
-  if(b.dataset.type==="SOP"){
-    window.location.href="https://notebook.google.com/notebook/e11ecb55-02db-4e4b-a03b-f06b5d0a77c7";
+  const type = b.dataset.type;
+  if(NOTEBOOK_URLS[type]){
+    window.location.href = NOTEBOOK_URLS[type];
   } else {
-    openSearch(b.dataset.type);
+    openSearch(type);
   }
 }));
 document.getElementById("close").onclick=()=>modal.classList.remove("show");
