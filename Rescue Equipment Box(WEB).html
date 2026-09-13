@@ -1,0 +1,1611 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <!-- 📱 모바일 화면에 맞게 스케일을 자동 조정하는 태그 (필수) -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>수난인명구조장비함 점검 시스템</title>
+    <style>
+        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css');
+
+        :root {
+            --fire: #EA6A12;
+            --fire-dark: #B84F0D;
+            --amber: #FFB800;
+            --alarm: #F4511E;
+            --alarm-dark: #C73D12;
+            --bg: #FBF8F4;
+            --surface: #FFFFFF;
+            --ink: #2B241E;
+            --muted: #7C7268;
+            --line: #ECE4D8;
+        }
+
+        body { margin: 0; padding: 0; display: flex; height: 100vh; font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: var(--bg); overflow: hidden; color: var(--ink); }
+        
+        /* 좌측 패널 (PC 기본 기준) */
+        #sidebar { width: 400px; background: var(--surface); border-right: 1px solid var(--line); display: flex; flex-direction: column; box-shadow: 2px 0 16px rgba(32,20,16,0.08); z-index: 10; height: 100%; }
+        
+        .header { background: linear-gradient(135deg, var(--fire) 0%, var(--fire-dark) 100%); padding: 20px; color: white; border-bottom: 3px solid var(--alarm); }
+        .header h1 { margin: 0; font-size: 19px; font-weight: 700; letter-spacing: -0.2px; }
+
+        /* 관리번호 검색창 */
+        .search-bar { display: flex; gap: 8px; padding: 12px 15px; background: #FFF8EE; border-bottom: 1px solid var(--line); }
+        .search-bar input { flex: 1; padding: 10px 12px; border: 1px solid var(--line); border-radius: 999px; font-family: inherit; font-size: 13px; box-sizing: border-box; background: var(--surface); }
+        .search-bar input:focus { outline: 2px solid var(--fire); outline-offset: 1px; border-color: var(--fire); }
+        .search-bar button { padding: 10px 16px; background: var(--fire); color: white; border: none; border-radius: 999px; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+        .search-bar button:hover { background: var(--fire-dark); }
+
+        /* 📱 모바일에서 폼/목록 전체화면 볼 때 나오는 '지도로 돌아가기' 버튼 (PC에서는 항상 숨김) */
+        .back-to-map-btn { display: none; width: 100%; padding: 10px; background: var(--ink); color: white; border: none; font-size: 13px; font-weight: 700; cursor: pointer; }
+
+        /* 📱 모바일 전용: 위/아래로 밀어서 지도⇄전체화면 전환하는 손잡이 */
+        .drag-handle { display: none; }
+        
+        /* 통계 박스 */
+        .stats { padding: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; border-bottom: 1px solid var(--line); background: #F7F9FA; }
+        .stat-box { background: var(--surface); border: 1px solid var(--line); padding: 12px; border-radius: 10px; text-align: center; font-size: 14px; color: var(--muted); cursor: pointer; transition: 0.2s; }
+        .stat-box:hover { background: #FDF3D9; border-color: #F0CE7A; }
+        .stat-box strong { display: block; font-size: 20px; color: var(--fire); margin-top: 4px; font-weight: 700; }
+        .stat-total { grid-column: 1 / -1; background: var(--fire); border-color: var(--fire); cursor: default; padding: 10px; border-radius: 10px; }
+        .stat-total:hover { background: var(--fire); border-color: var(--fire); }
+        .stat-total { color: rgba(255,255,255,0.75); }
+        .stat-total strong { color: #fff; font-size: 26px; }
+
+        /* 메뉴 탭 스타일 */
+        .tab-menu { display: flex; border-bottom: 1px solid var(--line); background: #F7F9FA; flex-shrink: 0; }
+        .tab-btn { flex: 1; padding: 12px 2px; text-align: center; font-size: 12px; font-weight: 600; color: var(--muted); cursor: pointer; border-bottom: 3px solid transparent; transition: 0.2s; }
+        .tab-btn.active { color: var(--amber); border-bottom: 3px solid var(--amber); background: var(--surface); font-weight: 700; }
+
+        /* 화면 뷰 영역 */
+        .view-section { display: none; padding: 20px; overflow-y: auto; flex: 1; -webkit-overflow-scrolling: touch; }
+        .view-section.active { display: block; }
+
+        /* 점검 폼 영역 */
+        #default-msg { text-align: center; color: var(--muted); margin-top: 60px; font-size: 15px; line-height: 1.7; }
+        #inspect-form { display: none; }
+        
+        .eq-info { background: var(--bg); padding: 15px; border-radius: 10px; margin-bottom: 15px; border: 1px solid var(--line); }
+        .eq-info .tag { display: inline-block; background: var(--amber); color: white; font-size: 12px; padding: 4px 10px; border-radius: 999px; margin-bottom: 8px; font-weight: 700; }
+        .eq-info .id { font-size: 20px; font-weight: 700; color: var(--fire); margin-bottom: 5px; }
+        .eq-info .loc { font-size: 14px; color: var(--muted); word-break: keep-all; }
+
+        /* 최근 사진 보기 영역 */
+        .recent-photos { display: none; background: var(--surface); border: 1px solid var(--line); padding: 10px; border-radius: 10px; margin-bottom: 15px; }
+        .recent-photos label { display: block; font-size: 13px; font-weight: 700; color: var(--ink); margin-bottom: 8px; }
+        .photo-thumbs { display: flex; gap: 10px; }
+        .photo-thumbs div { flex: 1; text-align: center; font-size: 11px; color: var(--muted); }
+        .photo-thumbs img { width: 100%; height: 80px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); cursor: pointer; margin-bottom: 4px; transition: 0.2s; }
+        .photo-thumbs img:hover { filter: brightness(0.9); }
+
+        .input-group { margin-bottom: 16px; }
+        .input-group label { display: block; font-size: 13px; font-weight: 700; color: var(--ink); margin-bottom: 6px; }
+        .input-group select, .input-group textarea, .input-group input { width: 100%; padding: 10px; border: 1px solid var(--line); border-radius: 8px; font-family: inherit; font-size: 14px; box-sizing: border-box; color: var(--ink); }
+        .input-group select:focus, .input-group textarea:focus, .input-group input:focus { outline: 2px solid var(--amber); outline-offset: 1px; border-color: var(--amber); }
+        .input-group textarea { height: 80px; resize: none; }
+        
+        /* 세부 소요 수량 입력 박스 */
+        #detail-needs-box { display: none; background: #FFF4EC; border: 1px solid #F3C4A4; padding: 12px; border-radius: 10px; margin-bottom: 16px; }
+        .needs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .needs-item { display: flex; align-items: center; justify-content: space-between; background: var(--surface); padding: 6px 10px; border-radius: 6px; border: 1px solid #F3C4A4; }
+        .needs-item span { font-size: 12px; font-weight: 700; color: var(--alarm-dark); }
+        .needs-item input { width: 60px; padding: 4px 6px; text-align: center; font-weight: 700; font-size: 14px; border: 1px solid var(--line); border-radius: 6px;}
+
+        /* 사진 입력 그룹 분리 */
+        .photo-input-container { display: flex; gap: 10px; }
+        .photo-input-container > div { flex: 1; background: #F7F9FA; padding: 10px; border-radius: 8px; border: 1px solid var(--line); }
+        .photo-input-container label { font-size: 12px; font-weight:700; color: var(--ink); margin-bottom: 6px; display:block; }
+        .photo-input-container input[type="file"] { padding: 5px; font-size: 11px; width: 100%; box-sizing: border-box; background: var(--surface); border-radius: 6px; border: 1px solid var(--line); }
+        
+        .preview-img { display: none; width: 100%; height: 100px; object-fit: cover; margin-top: 8px; border-radius: 6px; border: 1px solid var(--line); }
+
+        /* 🧭 로드뷰 영역 */
+        .roadview-box { background: #FFF4E6; border: 1px solid #F5C99A; border-radius: 10px; padding: 12px; margin-bottom: 15px; }
+        .roadview-header { display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 700; color: var(--ink); }
+        .roadview-header button { padding: 6px 12px; background: var(--fire); color: white; border: none; border-radius: 999px; font-size: 12px; font-weight: 700; cursor: pointer; }
+        .roadview-header button:hover { background: var(--fire-dark); }
+        #roadview { display: none; width: 100%; height: 220px; border-radius: 8px; overflow: hidden; margin-top: 10px; background: #ddd; }
+        #roadview-empty { display: none; font-size: 12px; color: var(--muted); margin-top: 8px; }
+
+        .btn-save { width: 100%; padding: 15px; background: var(--alarm); color: white; border: none; border-radius: 999px; font-size: 16px; font-weight: 700; cursor: pointer; margin-top: 10px; box-shadow: 0 4px 14px rgba(244,81,30,0.32); transition: 0.15s; }
+        .btn-save:hover { background: var(--alarm-dark); box-shadow: 0 4px 14px rgba(199,61,18,0.4); }
+        .btn-save:disabled { background: #C7CDD3; box-shadow: none; cursor: default; }
+
+        /* 리스트 영역 공통 */
+        .history-item { background: var(--surface); border: 1px solid var(--line); padding: 15px; border-radius: 10px; margin-bottom: 15px; box-shadow: 0 2px 6px rgba(32,20,16,0.05); transition: 0.15s; }
+        .history-item:hover { border-color: var(--amber); }
+        .history-item .h-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--bg); padding-bottom: 8px; margin-bottom: 10px; }
+        .history-item .h-title { font-size: 16px; font-weight: 700; color: var(--fire); }
+        .history-item .h-date { font-size: 12px; color: var(--muted); }
+        .btn-delete { background: none; border: 1px solid var(--line); color: var(--muted); font-size: 12px; padding: 3px 7px; border-radius: 6px; cursor: pointer; line-height: 1; }
+        .btn-delete:hover { background: #FDEBEA; border-color: #F3B9B4; color: #B4231A; }
+        .history-item .h-info { font-size: 13px; color: var(--muted); margin-bottom: 4px; word-break: keep-all; }
+        .history-item .h-status { display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; background: #FCF0D6; color: var(--amber); margin-top: 4px; }
+        .history-item .h-memo { background: #F7F9FA; padding: 10px; border-radius: 8px; font-size: 13px; color: var(--ink); margin-top: 10px; border: 1px dashed var(--line); }
+        
+        .history-photos { display: flex; gap: 10px; margin-top: 10px; }
+        .history-photos > div { flex: 1; text-align: center; font-size: 11px; color: var(--muted);}
+        .history-photos img { width: 100%; height: 120px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); cursor: pointer; }
+
+        /* 보수/소요 배지 스타일 */
+        .repair-badge-wrap { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 5px; }
+        .repair-badge { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 999px; }
+        .badge-box { background: #FFEADC; color: #B44A16; border: 1px solid #F3C4A4; }
+        .badge-ring { background: #FBE3E0; color: #B23B2E; border: 1px solid #F0BEB8; }
+        .badge-vest { background: #FDF0D5; color: #9C6A15; border: 1px solid #F0DBA8; }
+        .badge-rope { background: #E1EEF0; color: #2E6B78; border: 1px solid #BEDBE0; }
+
+        .empty-history { text-align: center; color: var(--muted); padding: 40px 0; font-size: 14px; }
+
+        /* 우측 지도 */
+        #map { flex: 1; height: 100%; position: relative; }
+        .info-title { padding: 5px 10px; font-size: 13px; font-weight: 700; color: var(--fire); white-space: nowrap; }
+
+        .marker-label {
+            background: rgba(255, 255, 255, 0.95); border: 1px solid var(--fire); color: var(--fire);
+            padding: 3px 7px; font-size: 12px; font-weight: 700; border-radius: 6px;
+            box-shadow: 0 2px 4px rgba(184,79,13,0.2); white-space: nowrap; pointer-events: none;
+        }
+
+        /* 📸 이미지 확대 뷰어 (모달) */
+        #image-viewer {
+            display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(26,20,16,0.92); z-index: 9999; flex-direction: column;
+            align-items: center; justify-content: center; backdrop-filter: blur(5px);
+        }
+        #image-viewer img { max-width: 90%; max-height: 80%; border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+        #image-viewer .close-btn { position: absolute; top: 20px; right: 30px; color: white; font-size: 30px; font-weight: bold; cursor: pointer; }
+        #image-viewer .viewer-label { color: white; font-size: 16px; margin-top: 15px; background: rgba(0,0,0,0.5); padding: 5px 15px; border-radius: 999px; }
+
+        /* 📱 모바일 최적화 (스마트폰 크기일 때 위아래 배치) */
+        @media screen and (max-width: 768px) {
+            body { flex-direction: column; } 
+            
+            /* 지도를 화면 위쪽(45%)에 고정 */
+            #map { flex: none; height: 45vh; width: 100%; order: -1; } 
+            
+            /* 좌측 패널을 화면 아래쪽(55%)으로 이동 */
+            #sidebar { width: 100%; height: 55vh; border-right: none; border-top: 2px solid var(--line); box-shadow: 0 -4px 16px rgba(32,20,16,0.12); } 
+            
+            .drag-handle { display: flex; justify-content: center; align-items: center; padding: 9px 0; background: var(--surface); cursor: grab; touch-action: none; }
+            .drag-handle span { width: 44px; height: 5px; border-radius: 999px; background: var(--line); }
+            
+            .header { padding: 12px 15px; }
+            .header h1 { font-size: 18px; }
+            
+            .stats { padding: 10px; grid-template-columns: 1fr 1fr; gap: 6px; }
+            .stat-box { padding: 8px; font-size: 12px; }
+            .stat-box strong { font-size: 16px; margin-top: 2px; }
+            .stat-total strong { font-size: 20px; }
+            
+            .tab-btn { font-size: 11px; padding: 10px 1px; letter-spacing: -0.5px; }
+            
+            .view-section { padding: 15px; padding-bottom: 40px; }
+            .needs-grid { grid-template-columns: 1fr; } /* 입력창 1열 배치 */
+
+            /* 🔽 마커를 누르거나 목록 탭을 볼 때: 지도를 숨기고 사이드바를 전체화면으로 */
+            body.mobile-form-open #map { display: none; }
+            body.mobile-form-open #sidebar { height: 100vh; }
+            body.mobile-form-open .back-to-map-btn { display: block; }
+
+            /* 🔽 저장 버튼이 스크롤 안 해도 항상 보이도록 화면 하단에 고정 */
+            body.mobile-form-open .view-section.active { padding-bottom: 260px; }
+            body.mobile-form-open #view-form.active { padding-bottom: 220px; }
+            body.mobile-form-open #view-form .btn-save {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                width: 100%;
+                margin: 0;
+                border-radius: 0;
+                z-index: 50;
+                box-shadow: 0 -4px 14px rgba(0,0,0,0.2);
+            }
+        }
+    </style>
+    <!-- 실제 카카오 API 키를 아래 appkey 부분에 입력하세요 -->
+    <script type="text/javascript" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=8f48fc830c11cd975c0da7b09804d5f6&libraries=clusterer&autoload=false"></script>
+</head>
+<body>
+
+    <!-- 사이드바 (모바일에서는 화면 하단으로 내려감) -->
+    <div id="sidebar">
+        <div class="drag-handle" id="drag-handle"><span></span></div>
+
+        <div class="header">
+            <h1>🚒 수난인명구조장비함 관리</h1>
+        </div>
+
+        <div class="search-bar">
+            <input type="text" id="search-input" placeholder="🔍 관리번호로 검색 (예: 한림-01)" onkeydown="if(event.key==='Enter'){ searchEquipment(); }">
+            <button type="button" onclick="searchEquipment()">이동</button>
+        </div>
+        
+        <button type="button" class="back-to-map-btn" onclick="closeMobileForm()">⬅ 지도로 돌아가기</button>
+
+        <div class="stats">
+            <div class="stat-box stat-total">총 합계 <strong>394</strong></div>
+            <div class="stat-box" onclick="showStationList('제주')">제주 <strong id="stat-jeju">108</strong></div>
+            <div class="stat-box" onclick="showStationList('서귀포')">서귀포 <strong id="stat-seogwipo">46</strong></div>
+            <div class="stat-box" onclick="showStationList('서부')">서부 <strong id="stat-seobu">119</strong></div>
+            <div class="stat-box" onclick="showStationList('동부')">동부 <strong id="stat-dongbu">121</strong></div>
+        </div>
+
+        <div class="tab-menu">
+            <div class="tab-btn active" data-tab="form" onclick="switchTab('form')">📝 폼</div>
+            <div class="tab-btn" data-tab="history" onclick="switchTab('history')">📋 실적</div>
+            <div class="tab-btn" data-tab="repairs" onclick="switchTab('repairs')">🛠️ 보수/소요</div>
+            <div class="tab-btn" data-tab="needs" onclick="switchTab('needs')">🚨 요점검</div>
+            <div class="tab-btn" data-tab="status" onclick="switchTab('status')">📊 상태</div>
+        </div>
+
+        <!-- 뷰 1: 점검 폼 -->
+        <div id="view-form" class="view-section active">
+            <div id="default-msg">
+                <div style="font-size: 46px; margin-bottom: 12px;">👨‍🚒</div>
+                📍 지도에서 장비함 마커를 클릭하면<br>점검결과를 입력할 수 있습니다.
+            </div>
+
+            <div id="inspect-form">
+                <div class="eq-info">
+                    <span class="tag" id="label-station">소방서</span>
+                    <div class="id" id="label-id">관리번호</div>
+                    <div class="loc" id="label-loc">상세위치</div>
+                </div>
+
+                <!-- 최근 사진 보기 영역 -->
+                <div class="recent-photos" id="recent-photos-container">
+                    <label>📸 최근 저장된 사진 (클릭 시 확대)</label>
+                    <div class="photo-thumbs">
+                        <div id="thumb-ext-wrap" style="display:none;">
+                            <img id="thumb-ext" onclick="openImageViewer(this.src, '최근 외부 사진')">
+                            <span>외부 사진</span>
+                        </div>
+                        <div id="thumb-int-wrap" style="display:none;">
+                            <img id="thumb-int" onclick="openImageViewer(this.src, '최근 내부 사진')">
+                            <span>내부 사진</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 🧭 로드뷰 영역 -->
+                <div class="roadview-box">
+                    <div class="roadview-header">
+                        <span>🧭 로드뷰로 현장 확인</span>
+                        <button type="button" id="roadview-toggle-btn" onclick="toggleRoadview()">로드뷰 보기</button>
+                    </div>
+                    <div id="roadview"></div>
+                    <div id="roadview-empty">이 위치 주변에는 로드뷰 정보가 없습니다.</div>
+                </div>
+
+                <!-- 이설 좌표 직접 입력 영역 -->
+                <div class="input-group" style="background: #e0f2fe; padding: 12px; border-radius: 6px; border: 1px dashed #7dd3fc;">
+                    <label style="color: #0369a1;">📍 위치 변경 (이설 시 좌표 직접 수정)</label>
+                    <div style="font-size: 12px; color: #0284c7; margin-bottom: 8px; line-height: 1.4;">
+                        ※ 공사 등으로 장비함이 이동된 경우, <b>아래 입력창에 새로운 위도와 경도 숫자를 직접 입력</b>하여 좌표를 수정하세요.
+                    </div>
+                    <div style="display: flex; gap: 5px; margin-bottom: 8px;">
+                        <input type="text" id="input-lat" placeholder="위도 입력 (예: 33.123456)" style="font-size: 13px; font-weight: bold; background: #fff; border-color: #38bdf8;">
+                        <input type="text" id="input-lng" placeholder="경도 입력 (예: 126.123456)" style="font-size: 13px; font-weight: bold; background: #fff; border-color: #38bdf8;">
+                    </div>
+                    <button type="button" onclick="getLocationFromCenter()" style="width: 100%; padding: 8px; background: #bae6fd; color: #0369a1; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 12px;">
+                        (또는 현재 지도 중앙 좌표로 채우기)
+                    </button>
+                </div>
+
+                <div class="input-group">
+                    <label>점검 일자</label>
+                    <input type="date" id="input-date">
+                </div>
+
+                <div class="input-group">
+                    <label>작성자(점검자)</label>
+                    <input type="text" id="input-author" placeholder="예) 소방교 홍길동">
+                </div>
+
+                <div class="input-group">
+                    <label>점검 상태</label>
+                    <select id="input-status" onchange="toggleNeedsBox()">
+                        <option value="정상">🟢 외관 및 비치품 양호 (정상)</option>
+                        <option value="수리필요">🟡 장비함 수리/보수 필요</option>
+                        <option value="망실">🔴 구명환/구명조끼/로프 망실</option>
+                        <option value="복합이상">🟠 수리 및 망실 동시 발생</option>
+                    </select>
+                </div>
+
+                <!-- 세부 보수/망실 소요 수량 입력 영역 -->
+                <div id="detail-needs-box">
+                    <label style="font-size: 12px; font-weight: bold; color: #c2410c; display: block; margin-bottom: 8px;">
+                        ⚙️ 보수 및 망실 보충 필요 수량 입력
+                    </label>
+                    <div class="needs-grid">
+                        <div class="needs-item">
+                            <span>📦 함체 수리</span>
+                            <input type="number" id="need-box" min="0" value="0">
+                        </div>
+                        <div class="needs-item">
+                            <span>🛟 구명환</span>
+                            <input type="number" id="need-ring" min="0" value="0">
+                        </div>
+                        <div class="needs-item">
+                            <span>🦺 구명조끼</span>
+                            <input type="number" id="need-vest" min="0" value="0">
+                        </div>
+                        <div class="needs-item">
+                            <span>🪢 유도로프</span>
+                            <input type="number" id="need-rope" min="0" value="0">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>특이사항 (메모)</label>
+                    <textarea id="input-memo" placeholder="파손 부위 및 망실 장비 등 특이사항을 기록하세요."></textarea>
+                </div>
+
+                <!-- 외부/내부 사진 개별 등록 -->
+                <div class="input-group">
+                    <label>사진 첨부 (스마트폰 카메라 연동 가능)</label>
+                    <div class="photo-input-container">
+                        <div>
+                            <label>📷 외부 사진</label>
+                            <input type="file" id="input-photo-ext" accept="image/*" onchange="previewPhoto(event, 'preview-ext')">
+                            <img id="preview-ext" class="preview-img">
+                        </div>
+                        <div>
+                            <label>📷 내부 사진</label>
+                            <input type="file" id="input-photo-int" accept="image/*" onchange="previewPhoto(event, 'preview-int')">
+                            <img id="preview-int" class="preview-img">
+                        </div>
+                    </div>
+                </div>
+
+                <button class="btn-save" onclick="saveData()">🚒 점검결과 저장 (위치 포함)</button>
+            </div>
+        </div>
+
+        <!-- 뷰 2: 점검 실적 -->
+        <div id="view-history" class="view-section">
+            <div id="history-container"></div>
+        </div>
+
+        <!-- 뷰 3: 보수 및 망실 소요 내역 -->
+        <div id="view-repairs" class="view-section">
+            <div id="repairs-container"></div>
+        </div>
+
+        <!-- 뷰 4: 점검 필요사항 (요점검) -->
+        <div id="view-needs" class="view-section">
+            <div id="needs-container"></div>
+        </div>
+
+        <!-- 뷰 5: 점검 상태 (진행률) -->
+        <div id="view-status" class="view-section">
+            <div id="status-container"></div>
+        </div>
+
+        <!-- 뷰 6: 소방서 세부 목록 -->
+        <div id="view-list" class="view-section">
+            <div id="list-container"></div>
+        </div>
+    </div>
+
+    <!-- 우측 지도 영역 (모바일에서는 화면 상단으로 올라감) -->
+    <div id="map"></div>
+
+    <!-- 📸 전체화면 이미지 뷰어 -->
+    <div id="image-viewer" onclick="closeImageViewer()">
+        <span class="close-btn">&times;</span>
+        <img id="viewer-img" src="" alt="확대 이미지" onclick="event.stopPropagation()">
+        <div class="viewer-label" id="viewer-label"></div>
+    </div>
+
+    <script type="module">
+        // ===== 🔥 Firebase 연동 (점검 기록 저장/불러오기) =====
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, query, orderBy, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCOmvq2sjqN8K3dzuyt6tzKwHvAkifnEGI",
+            authDomain: "jejusobang1190.firebaseapp.com",
+            projectId: "jejusobang1190",
+            storageBucket: "jejusobang1190.firebasestorage.app",
+            messagingSenderId: "904628602870",
+            appId: "1:904628602870:web:572571e3ebf072c508a9d7"
+        };
+        const firebaseApp = initializeApp(firebaseConfig);
+        const db = getFirestore(firebaseApp);
+
+        // ===== ☁️ Cloudinary 연동 (사진 저장) =====
+        const CLOUDINARY_CLOUD_NAME = "oaoag1do";
+        const CLOUDINARY_UPLOAD_PRESET = "jeju_inspection";
+
+        // publicId를 지정하면 같은 장비함의 같은 위치(외부/내부) 사진은 새로 쌓이지 않고
+        // 기존 사진을 덮어써서 저장공간을 절약합니다. (Cloudinary 프리셋의 "덮어쓰기"가 켜져 있어야 함)
+        // 📉 사진을 서버에 올리기 전에 가로/세로 최대 1600px, 화질 75%로 압축해서
+        // 저장공간과 조회 트래픽(Cloudinary 크레딧)을 크게 아낍니다.
+        function compressImage(file, maxDim, quality) {
+            return new Promise(function(resolve, reject) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    var img = new Image();
+                    img.onload = function() {
+                        var w = img.width, h = img.height;
+                        if (w > h) {
+                            if (w > maxDim) { h = Math.round(h * (maxDim / w)); w = maxDim; }
+                        } else {
+                            if (h > maxDim) { w = Math.round(w * (maxDim / h)); h = maxDim; }
+                        }
+                        var canvas = document.createElement('canvas');
+                        canvas.width = w;
+                        canvas.height = h;
+                        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                        canvas.toBlob(function(blob) {
+                            if (blob) resolve(blob); else reject(new Error('이미지 압축 실패'));
+                        }, 'image/jpeg', quality);
+                    };
+                    img.onerror = function() { reject(new Error('이미지를 불러올 수 없습니다.')); };
+                    img.src = e.target.result;
+                };
+                reader.onerror = function() { reject(new Error('파일을 읽을 수 없습니다.')); };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        async function uploadToCloudinary(file, publicId) {
+            var compressed = await compressImage(file, 1600, 0.75);
+            var formData = new FormData();
+            formData.append('file', compressed, 'photo.jpg');
+            formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+            if (publicId) formData.append('public_id', publicId);
+            var res = await fetch('https://api.cloudinary.com/v1_1/' + CLOUDINARY_CLOUD_NAME + '/image/upload', {
+                method: 'POST',
+                body: formData
+            });
+            if (!res.ok) throw new Error('사진 업로드 실패');
+            var data = await res.json();
+            // 캐시 문제 없이 항상 최신 사진이 보이도록 버전 번호를 붙여서 반환
+            return data.secure_url + '?v=' + data.version;
+        }
+
+        async function saveInspectionToFirestore(record) {
+            var docRef = await addDoc(collection(db, 'inspections'), Object.assign({}, record, { createdAt: Date.now() }));
+            return docRef.id;
+        }
+
+        async function deleteInspectionFromFirestore(docId) {
+            await deleteDoc(doc(db, 'inspections', docId));
+        }
+
+        async function loadHistoryFromFirestore() {
+            var q = query(collection(db, 'inspections'), orderBy('createdAt', 'desc'));
+            var snapshot = await getDocs(q);
+            var records = [];
+            snapshot.forEach(function(docSnap) { records.push(Object.assign({ docId: docSnap.id }, docSnap.data())); });
+            return records;
+        }
+        // ===== Firebase 연동 끝 =====
+
+        var map, infowindow;
+        var roadviewInstance, roadviewClient;
+        var historyData = [];
+        var markerMap = {}; 
+        var overlayMap = {}; 
+
+        // 페이지를 열면 서버(Firestore)에 저장된 점검 기록을 불러옵니다.
+        loadHistoryFromFirestore().then(function(records) {
+            historyData = records;
+        }).catch(function(err) {
+            console.error('점검 기록을 불러오지 못했습니다:', err);
+        });
+
+        var stationNames = ['제주', '서귀포', '서부', '동부'];
+        
+        // 394개 전체 장비함 데이터
+        var rawData = [
+            ['삼도-01', '탑동 해변공연장 서측(길 맞은편)', 0, 33.518580, 126.523921],
+            ['삼도-02', '탑동 이마트 주차장 북동측', 0, 33.518839, 126.522220],
+            ['삼도-03', '탑동 이마트 주차장 북서측', 0, 33.519082, 126.520498],
+            ['삼도-04', '탑동 라마다프라자호텔 북동측', 0, 33.519207, 126.519445],
+            ['삼도-05', '탑동 라마다프라자호텔 북측', 0, 33.519295, 126.518512],
+            ['삼도-06', '탑동 라마다프라자호텔 서측', 0, 33.517854, 126.516297],
+            ['삼도-07', '동한두기 포구 동측', 0, 33.517157, 126.515791],
+            ['삼도-08', '서한두기 용연포구 오션횟집 앞', 0, 33.515881, 126.514137],
+            ['삼도-09', '해안도로 닥그네 포구', 0, 33.518498, 126.500364],
+            ['삼도-10', '어영공원 화장실 서측', 0, 33.518301, 126.487325],
+            ['삼도-11', '동한두기 안쪽길', 0, 33.516055, 126.514880],
+            ['삼도-12', '전망대 바닥면', 0, 33.515531, 126.514242],
+            ['삼도-13', '대게회타운 앞 해안가', 0, 33.516928, 126.505161],
+            ['삼도-14', '용담포구 동측방파제', 0, 33.517942, 126.500835],
+            ['항만-1', '건입동 서부두 방파제 외항(북측)', 0, 33.521928, 126.529296],
+            ['항만-2', '건입동 서부두 방파제 외항(남측)', 0, 33.520622, 126.528427],
+            ['항만-3', '건입동 탑동광장 내 농구장 북측', 0, 33.518145, 126.527233],
+            ['항만-4', '건입동 산지천 구)빨래터 맞은편', 0, 33.514842, 126.528640],
+            ['항만-5', '건입동 탑동광장 내 리젠트마린 호텔 북측', 0, 33.518379, 126.525481],
+            ['항만-6', '건입동 용진교 입구', 0, 33.516848, 126.530516],
+            ['항만-7', '건입동 산지천 구름다리 남측', 0, 33.514628, 126.528865],
+            ['항만-8', '산지천 남측 다리(북성교) 끝부분', 0, 33.514719, 126.528589],
+            ['항만-9', '건입동 산지천 구름다리 남측', 0, 33.514503, 126.528697],
+            ['항만-10', '제2부두 방파제 시작지점', 0, 33.521563, 126.531768],
+            ['항만-11', '제2부두 방파제 300m지점', 0, 33.521703, 126.532079],
+            ['항만-12', '제2부두 방파제 500m지점', 0, 33.521910, 126.532449],
+            ['항만-13', '제2부두 방파제 600m지점', 0, 33.522862, 126.533607],
+            ['항만-14', '제2부두 방파제 800m지점', 0, 33.523378, 126.534301],
+            ['항만-15', '제2부두 방파제 1,000m지점', 0, 33.525299, 126.535995],
+            ['항만-16', '제2부두 방파제 1,200m지점', 0, 33.528347, 126.538070],
+            ['항만-17', '제2부두 방파제 1,400m지점', 0, 33.530473, 126.539514],
+            ['항만-18', '제2부두 방파제 끝지점', 0, 33.532235, 126.540786],
+            ['항만-19', '건입동 1451-2번지 인근', 0, 33.522323, 126.545469],
+            ['항만-20', '제주신항 서측', 0, 33.527986, 126.543193],
+            ['항만-21', '제주신항 동측', 0, 33.527848, 126.543850],
+            ['항만-22', '제주신항 방파제 남측 끝지점', 0, 33.532971, 126.558213],
+            ['항만-23', '제주신항 방파제 남측 600m지점', 0, 33.531115, 126.553298],
+            ['항만-24', '서부두길 26 턱 위 방파제', 0, 33.518805, 126.528325],
+            ['항만-25', '제주항 서부두 빨간등대', 0, 33.519616, 126.529150],
+            ['추자-01', '대서리포구 방파제', 0, 33.961439, 126.300635],
+            ['추자-02', '추자교(남)', 0, 33.952867, 126.303940],
+            ['추자-03', '신양리 석두청사 해안가', 0, 33.935877, 126.324505],
+            ['추자-04', '신양리 모진이 해수욕장', 0, 33.945870, 126.334176],
+            ['추자-05', '용둠벙전망대', 0, 33.961084, 126.284643],
+            ['추자-06', '상추자항 여객선터미널', 0, 33.962449, 126.297717],
+            ['추자-07', '후포해수욕장 우측 안쪽도로', 0, 33.964870, 126.286206],
+            ['추자-08', 'LG전자 맞은편 포구', 0, 33.961275, 126.295019],
+            ['추자-09', '영흥리사무소 맞은편 포구', 0, 33.959854, 126.296633],
+            ['추자-10', '발전소 안쪽', 0, 33.953476, 126.301777],
+            ['추자-11', '묵리포구', 0, 33.945279, 126.312201],
+            ['추자-12', '묵리포구 좌측 방파제', 0, 33.945183, 126.312065],
+            ['추자-13', '신양항 수협창고 앞', 0, 33.944954, 126.327453],
+            ['추자-14', '신양2리 석지머리 해안가', 0, 33.933153, 126.329646],
+            ['추자-15', '예초리포구 앞', 0, 33.955926, 126.331823],
+            ['추자-16', '신양항 선착장 옆', 0, 33.944866, 126.328556],
+            ['추자-17', '예초리 해녀탈의장 앞 해안가', 0, 33.955838, 126.331993],
+            ['추자-18', '후포해변', 0, 33.962283, 126.289136],
+            ['추자-19', '신산대 전망대 끝', 0, 33.954727, 126.342124],
+            ['추자-20', '신양2리 방파제 선착장입구', 0, 33.938305, 126.325124],
+            ['추자-21', '신양2리 방파제 선착장 중간', 0, 33.938577, 126.325421],
+            ['추자-22', '신양2리 방파제 선착장 끝', 0, 33.938573, 126.325563],
+            ['화북-01', '삼양2동 감수탕 서측 해안', 0, 33.525485, 126.583550],
+            ['화북-02', '삼양해수욕장 감수탕 동측 가드레일', 0, 33.525585, 126.584248],
+            ['화북-03', '삼양해수욕장 행정봉사실 앞', 0, 33.526130, 126.586860],
+            ['화북-04', '삼양일동 포구', 0, 33.532499, 126.589568],
+            ['화북-05', '화북1동 포구(유류저장고 벽면)', 0, 33.525488, 126.566177],
+            ['화북-06', '화북1동 포구 외항(방파제 중간)', 0, 33.527359, 126.565685],
+            ['화북-07', '화북1동 포구 내항', 0, 33.525668, 126.565443],
+            ['화북-08', '삼양3동 포구 유류탱크 인근', 0, 33.527123, 126.577296],
+            ['화북-09', '삼양해수욕장 상황실 서측 모래사장', 0, 33.525597, 126.586211],
+            ['화북-10', '샛도리물 남측인도', 0, 33.528844, 126.589005],
+            ['화북-11', '화북포구 해신사 북측', 0, 33.524930, 126.565630],
+            ['외도-01', '월대천 하류(화장실 앞)', 0, 33.492899, 126.436395],
+            ['외도-02', '월대천 하류(화장실 맞은편)', 0, 33.492740, 126.437020],
+            ['외도-03', '월대천 상류(냇가 쉼터 앞)', 0, 33.492645, 126.435846],
+            ['외도-04', '이호테우해수욕장 입구', 0, 33.497626, 126.453196],
+            ['외도-05', '이호테우해수욕장 동측방파제', 0, 33.497679, 126.453163],
+            ['외도-06', '이호테우해수욕장(공연장 앞)', 0, 33.498301, 126.453360],
+            ['외도-07', '이호테우해수욕장(올레어촌식당 앞)', 0, 33.497081, 126.451416],
+            ['외도-08', '도두 백개포구 방파제', 0, 33.504767, 126.460505],
+            ['외도-09', '도두포구 서측방파제(도두항서길 42번지건물 50m지점)', 0, 33.506767, 126.463718],
+            ['외도-10', '도두포구 서측방파제(도두항서길 42번지건물 160m지점)', 0, 33.508248, 126.463667],
+            ['외도-11', '사수포구 방파제', 0, 33.510578, 126.478275],
+            ['외도-12', '도두항(도두블루파크 시티호텔 서측)', 0, 33.505985, 126.463622],
+            ['외도-13', '월대천 하류(화장실 건너편)', 0, 33.492548, 126.436863],
+            ['외도-14', '월대천 하류 쉼터 앞', 0, 33.492578, 126.436812],
+            ['외도-15', '월대천 하류 입구', 0, 33.492365, 126.435937],
+            ['외도-16', '외도동 외도교 서측 교량 밑', 0, 33.494408, 126.435714],
+            ['외도-17', '롯데리아 뒤', 0, 33.494191, 126.429578],
+            ['외도-18', '외도동 연대포구 서방파제 입구', 0, 33.494951, 126.426033],
+            ['외도-19', '외도동 연대포구 서방파제 끝', 0, 33.495774, 126.427246],
+            ['외도-20', '내도포구', 0, 33.496223, 126.437792],
+            ['외도-21', '내도포구', 0, 33.495833, 126.437910],
+            ['외도-22', '연대포구', 0, 33.494800, 126.427026],
+            ['외도-23', '이호1동 374-5 이호 포구 선착장 입구', 0, 33.502786, 126.453575],
+            ['외도-24', '현사포구 동측 방파제', 0, 33.498237, 126.450292],
+            ['외도-25', '현사포구 서측 방파제 끝', 0, 33.498663, 126.450119],
+            ['외도-26', '백개포구 동측방면', 0, 33.504320, 126.460734],
+            ['외도-27', '흰말등대 인근', 0, 33.502723, 126.452166],
+            ['외도-28', '이호포구 선착장 입구', 0, 33.502669, 126.452904],
+            ['외도-29', '이호포구 선착장 입구', 0, 33.501827, 126.452282],
+            ['외도-30', '도두봉 동측', 0, 33.508811, 126.470765],
+            ['외도-31', '도두항 동방파제 입구(해경 옆)', 0, 33.507649, 126.466490],
+            ['외도-32', '도두항 동방파제 중간', 0, 33.508801, 126.465592],
+            ['외도-33', '도두항 동방파제 끝 등대인근', 0, 33.508526, 126.464935],
+            ['외도-34', '도두항 서방파제 중간', 0, 33.509108, 126.463988],
+            ['외도-35', '도두항 서방파제 끝 등대 인근', 0, 33.509416, 126.464550],
+            ['외도-36', '사수항 동측', 0, 33.509970, 126.479415],
+            ['대신-01', '대륜동 속골 유원지 내', 1, 33.240710, 126.526345],
+            ['대신-02', '월평동 월평포구', 1, 33.234459, 126.463281],
+            ['대신-03', '강정체육공원 옆 강정천 낀 산책로 50m', 1, 33.234052, 126.486569],
+            ['대신-04', '강정동 악근천 상류지역 소왕물', 1, 33.241037, 126.491209],
+            ['대신-05', '강정포구', 1, 33.227403, 126.475307],
+            ['대신-06', '강정교 다리 서측 120m지점', 1, 33.233843, 126.485684],
+            ['대신-07', '강정체육공원 서측 지점', 1, 33.234517, 126.485577],
+            ['대신-08', '강정천 바다방향 다리 아래 지점', 1, 33.233329, 126.487364],
+            ['대신-09', '강정천 동측 끝단 바다방면 400m', 1, 33.231930, 126.490780],
+            ['대신-10', '강정천 동측 끝단(2) 바다방면 400m', 1, 33.232323, 126.490857],
+            ['동홍-01', '황우지 선녀탕 산책길 서측 150m 지점', 1, 33.238465, 126.547642],
+            ['동홍-02', '새연교 다리 밑 방파제 종료 지점', 1, 33.237655, 126.559579],
+            ['동홍-03', '송산동 천지연 폭포 내부 가는 길 끝 부분', 1, 33.246764, 126.555154],
+            ['동홍-04', '솜반천 다리 북서측 50m지점', 1, 33.253406, 126.553215],
+            ['동홍-05', '걸매공원 주차장 내부다리 맞은편', 1, 33.251698, 126.555109],
+            ['동홍-06', '동홍천 산지물', 1, 33.265378, 126.564831],
+            ['동홍-07', '솜반천 정자 북측 30m 지점', 1, 33.253720, 126.552885],
+            ['동홍-08', '새섬 전망대', 1, 33.237010, 126.559940],
+            ['동홍-09', '새섬 둘레길 중간부분', 1, 33.235601, 126.562299],
+            ['동홍-10', '자구리포구 입구', 1, 33.242252, 126.568020],
+            ['동홍-11', '송산동 소남머리 계단 끝단', 1, 33.243445, 126.569683],
+            ['동홍-12', '정모시쉼터 파고라 인근 제1지점', 1, 33.246496, 126.571814],
+            ['동홍-13', '정모시쉼터 파고라 인근 제2지점', 1, 33.246502, 126.571884],
+            ['중문-01', '대포포구 방파제 동측끝단', 1, 33.237368, 126.438945],
+            ['중문-02', '대포포구 방파제 서측끝단', 1, 33.237525, 126.438633],
+            ['중문-03', '중문단지축구장 주차장 동측', 1, 33.235260, 126.433990],
+            ['중문-04', '상천포구 북측 천제2교 밑', 1, 33.245180, 126.418550],
+            ['중문-05', '베릿네공원 맞은편 구름다리 입구', 1, 33.245454, 126.418786],
+            ['중문-06', '베릿네공원 남측 천제2교 밑', 1, 33.245300, 126.418200],
+            ['중문-07', '중문색달해변 샤워실 앞', 1, 33.244790, 126.413501],
+            ['중문-08', '중문색달해변 서측 파르나스호텔 앞', 1, 33.244804, 126.407279],
+            ['중문-09', '논짓물 입구', 1, 33.236900, 126.389180],
+            ['중문-10', '예래포구 서방파제 입구 150m 지점', 1, 33.232357, 126.376315],
+            ['중문-11', '예래포구 동방파제 마리나클럽하우스 앞', 1, 33.232857, 126.377336],
+            ['중문-12', '예래포구 동방파제 끝단', 1, 33.232210, 126.377351],
+            ['효돈-01', '검은여 해안', 1, 33.244326, 126.582036],
+            ['효돈-02', '돈내코 다리 옆', 1, 33.298352, 126.589517],
+            ['효돈-03', '하효동 쇠소깍 전망대 인근', 1, 33.253402, 126.623447],
+            ['효돈-04', '돈내코 원앙폭포 진입계단', 1, 33.300476, 126.580122],
+            ['효돈-05', '검은여 해안 입구 동쪽 300m', 1, 33.244225, 126.584005],
+            ['효돈-06', '소천지 입구 정자 옆', 1, 33.239130, 126.591790],
+            ['효돈-07', '쇠소깍 해변 정자 앞 계단 밑', 1, 33.251639, 126.622895],
+            ['효돈-08', '돈내코 계꼭 원앙폭포 진입로 데크 위', 1, 33.301101, 126.580956],
+            ['효돈-09', '구두미포구 서측 100m', 1, 33.236822, 126.596463],
+            ['효돈-10', '보목포구 동방파제 주차장 끝', 1, 33.238532, 126.608236],
+            ['효돈-11', '하효항 동방파제 방향 끝단', 1, 33.248692, 126.621220],
+            ['한림-01', '협재해수욕장 동측 주차장', 2, 33.394444, 126.240556],
+            ['한림-02', '금능해수욕장 매점(모살밭회관) 앞', 2, 33.390000, 126.235556],
+            ['한림-03', '한림읍 한수리 방파제 등대 앞', 2, 33.416944, 126.252500],
+            ['한림-04', '한림읍 부두외항 방파제 측면벽', 2, 33.414444, 126.253333],
+            ['한림-05', '한림읍 부두외항 방파제 등대 앞', 2, 33.415556, 126.253056],
+            ['한림-06', '한림읍 귀덕리 용운동 방파제 입구벽', 2, 33.437369, 126.271474],
+            ['한림-07', '비양도 방파제 포구 앞', 2, 33.405833, 126.229444],
+            ['한림-08', '한림읍 귀덕1리포구 인근', 2, 33.446284, 126.293769],
+            ['한림-09', '한림읍 귀덕2리포구 인근', 2, 33.443868, 126.279408],
+            ['한림-10', '한림읍 수원리 해안도로 공유수면 인근', 2, 33.434183, 126.262263],
+            ['한림-11', '한림읍 대수포구 인근', 2, 33.425475, 126.262471],
+            ['한림-12', '한림읍 대수포구 인근', 2, 33.425607, 126.263815],
+            ['한림-13', '한림외항 입구', 2, 33.411316, 126.257041],
+            ['한림-14', '옹포포구 인근', 2, 33.404151, 126.249789],
+            ['한림-15', '협재포구 인근', 2, 33.399240, 126.242063],
+            ['한림-16', '협재해수욕장 중간지점', 2, 33.394393, 126.238720],
+            ['한림-17', '협재해변 ~ 금능해변 사이', 2, 33.392784, 126.237175],
+            ['한림-18', '금능해수욕장 주차장 인근', 2, 33.389570, 126.234932],
+            ['한림-19', '금능포구 인근', 2, 33.391049, 126.228047],
+            ['한림-20', '금능포구 서측 방파제 입구', 2, 33.390549, 126.227819],
+            ['한림-21', '월령포구 동측', 2, 33.379477, 126.216009],
+            ['한림-22', '비양포구 서측 방파제 끝', 2, 33.404827, 126.230466],
+            ['한림-23', '비양포구 대합실 앞', 2, 33.405500, 126.230702],
+            ['한림-24', '비양도 방파제 서측 입구', 2, 33.404627, 126.229448],
+            ['한림-25', '비양포구 대합실 방파제 끝', 2, 33.404942, 126.230885],
+            ['한림-26', '비양분교 앞 방파제', 2, 33.406821, 126.231446],
+            ['한림-27', '한림 수협 옆 유류탱크 인근', 2, 33.416636, 126.260212],
+            ['한림-28', '금능해수욕장 서측', 2, 33.389172, 126.233048],
+            ['한림-29', '한림읍 비양도 선착장 동측', 2, 33.419967, 126.261841],
+            ['한림-30', '월령포구 서방파제 끝', 2, 33.380085, 126.214739],
+            ['한림-31', '협재포구 서방파제 끝', 2, 33.398938, 126.242150],
+            ['한림-32', '월령1길 34, 물허벅동상 뒤', 2, 33.375322, 126.213532],
+            ['한림-33', '월령포구', 2, 33.379363, 126.215470],
+            ['애월-01', '곽지해수욕장 탈의실 앞', 2, 33.450219, 126.305168],
+            ['애월-02', '애월 중엄리해안도로 코쿤호텔 앞', 2, 33.479276, 126.370537],
+            ['애월-03', '구엄리 동측 방파체(동양콘도앞)', 2, 33.485020, 126.376181],
+            ['애월-04', '신엄포구 방파제(빨간등대 옆)', 2, 33.473949, 126.351294],
+            ['애월-05', '광령리 무수천다리 북측 150m지점', 2, 33.462614, 126.446491],
+            ['애월-06', '동귀포구 동측 방파제', 2, 33.486920, 126.406460],
+            ['애월-07', '하귀 미수동포구 입구 광장', 2, 33.485290, 126.401650],
+            ['애월-08', '구엄포구 서방파제 중간지점', 2, 33.484060, 126.376520],
+            ['애월-09', '구엄포구 서방파제 끝지점', 2, 33.484580, 126.376210],
+            ['애월-10', '구엄포구 서방파제 정자 앞', 2, 33.483530, 126.376750],
+            ['애월-11', '고내포구 서방파제 중간지점', 2, 33.468470, 126.337680],
+            ['애월-12', '고내포구 서방파제 입구', 2, 33.467350, 126.337550],
+            ['애월-13', '고내리 해안 본카페 앞 공터', 2, 33.467850, 126.332310],
+            ['애월-14', '애월내항 가스공사 인근', 2, 33.470520, 126.322250],
+            ['애월-15', '한담산책 중간휴게소', 2, 33.460130, 126.310720],
+            ['애월-16', '곽지해수욕장 노천탕 앞', 2, 33.450100, 126.303400],
+            ['애월-17', '곽지해수욕장 서측 끝 가기전', 2, 33.449240, 126.303000],
+            ['애월-18', '곽지해녀의집 인근', 2, 33.454110, 126.306390],
+            ['애월-19', '동귀포구 서측 방파제', 2, 33.486380, 126.406270],
+            ['애월-20', '가문동 포구', 2, 33.486500, 126.393560],
+            ['애월-21', '곽지해수욕장 동측 정자', 2, 33.455100, 126.307740],
+            ['대정-01', '운진항 방파제', 2, 33.207300, 126.257226],
+            ['대정-02', '모슬포항 방파제 입구, 서귀포해경 모슬포 출장소 인근', 2, 33.213940, 126.252003],
+            ['대정-03', '상하이수산 앞', 2, 33.242963, 126.212203],
+            ['대정-04', '한라가든 앞', 2, 33.247723, 126.201044],
+            ['대정-05', '신도2리 방파제', 2, 33.276882, 126.168545],
+            ['대정-06', '하모해수욕장', 2, 33.211127, 126.262059],
+            ['대정-07', '임꺽정 음식점 북동쪽 해안가', 2, 33.214412, 126.294409],
+            ['대정-08', '송악펜션단지 버스정류장 서쪽 갯바위', 2, 33.211862, 126.292558],
+            ['대정-09', '산이수동 여개석 선착장 중간', 2, 33.206104, 126.291005],
+            ['대정-10', '상모 해녀의집(아로파 스쿠버숍)', 2, 33.199834, 126.276246],
+            ['대정-11', '모슬포 운진항 매표소 앞', 2, 33.209866, 126.258331],
+            ['대정-12', '모슬포항 토요시장 내', 2, 33.218420, 126.249834],
+            ['대정-13', '동일포구 서측방파제 입구', 2, 33.226638, 126.241258],
+            ['대정-14', '서림유원지 내 끝단', 2, 33.239263, 126.227970],
+            ['대정-15', '서림수산 주차장 앞', 2, 33.243552, 126.216547],
+            ['대정-16', '선셋코스트, 스테이디앤디 사이 전신주 근처', 2, 33.245371, 126.205853],
+            ['대정-17', '대양영어조합법인 맞은편', 2, 33.249927, 126.198345],
+            ['대정-18', '대정읍 영락리 방파제', 2, 33.253306, 126.194462],
+            ['대정-19', '대유영어조합법인 맞은편', 2, 33.255187, 126.191898],
+            ['대정-20', '무릉리 심해수산(노을해안로 502) 맞은편', 2, 33.260004, 126.183270],
+            ['대정-21', '대정읍 노을해안로 524 신도리 (구)전경중대 서측 50m', 2, 33.262232, 126.181502],
+            ['대정-22', '신도해안도로 노을과어울림펜션 앞', 2, 33.270437, 126.176148],
+            ['대정-23', '가파도 상동 포구', 2, 33.175142, 126.271288],
+            ['대정-24', '가파도 하동 포구', 2, 33.166001, 126.273891],
+            ['대정-25', '가파도 여객선 선착장 서측 클린하우스 앞', 2, 33.174382, 126.269866],
+            ['대정-26', '마라도 살레덕 포구', 2, 33.122231, 126.269390],
+            ['대정-27', '마라도 자리덕 포구', 2, 33.120342, 126.266093],
+            ['대정-28', '마라도 남측 최남단비', 2, 33.113815, 126.268929],
+            ['대정-29', '헬기장 북쪽 해안가', 2, 33.123614, 126.268312],
+            ['대정-30', '마라도 신작로 방파제', 2, 33.115594, 126.265858],
+            ['한경-01', '고산리 엉알주차장 방호석 사이', 2, 33.300368, 126.167493],
+            ['한경-02', '메가리조트 앞 판포포구 서방파제 중간', 2, 33.366560, 126.200270],
+            ['한경-03', '메가리조트 앞 판포포구 입구(판포리 2877-3)', 2, 33.365591, 126.199615],
+            ['한경-04', '신창포구 동방파제 끝', 2, 33.349146, 126.178720],
+            ['한경-05', '신창포구 서방파제 중간', 2, 33.348450, 126.177859],
+            ['한경-06', '신창리 바다목장앞 교량 동쪽 입구', 2, 33.345600, 126.173519],
+            ['한경-07', '신창리 바다목장앞 교량 서쪽 입구', 2, 33.345519, 126.171379],
+            ['한경-08', '신창리바다목장 입구 도로', 2, 33.343206, 126.171875],
+            ['한경-09', '용당포구 동방파제 입구', 2, 33.338254, 126.165905],
+            ['한경-10', '용수포구 정자 인근', 2, 33.323197, 126.165396],
+            ['한경-11', '용수포구 용수어촌계 앞', 2, 33.323232, 126.166746],
+            ['한경-12', '차귀도항 동측 방파제', 2, 33.310363, 126.166023],
+            ['한경-13', '차귀도항 서측 방파제', 2, 33.309529, 126.164543],
+            ['한경-14', '해경 고산출장소 인근', 2, 33.307697, 126.163708],
+            ['한경-15', '한경보건지소 연못 앞', 2, 33.353133, 126.185487],
+            ['한경-16', '용수포구 동방파제 끝', 2, 33.322994, 126.164299],
+            ['한경-17', '두모방파제', 2, 33.356903, 126.179600],
+            ['안덕-01', '사계리 산계원 식당 맞은편 해변', 2, 33.224687, 126.299272],
+            ['안덕-02', '대평리 박수해안가(대평포구 옆)', 2, 33.236285, 126.359333],
+            ['안덕-03', '사계 출장소 앞', 2, 33.225270, 126.299980],
+            ['안덕-04', '사계 썬앤문 리조트 동측 30m 지점', 2, 33.227200, 126.302130],
+            ['안덕-05', '사계리 카페 뷰스트 앞', 2, 33.227560, 126.303720],
+            ['안덕-06', '산방산 원앤온리 카페 주차장 남쪽', 2, 33.238795, 126.318814],
+            ['안덕-07', '대평포구 서쪽 박수기정 방향 도로 옆', 2, 33.236760, 126.360010],
+            ['안덕-08', '사계리 해안체육공원 주차장', 2, 33.220220, 126.294590],
+            ['안덕-09', '사계항 서방파제 잠수항 선착장', 2, 33.226992, 126.305717],
+            ['안덕-10', '화순항 동방파제 끝단(서측)', 2, 33.236254, 126.333191],
+            ['안덕-11', '화순항 선착장 끝단', 2, 33.238094, 126.334346],
+            ['안덕-12', '화순항 중앙 가로등 밑', 2, 33.236844, 126.334126],
+            ['안덕-13', '대평포구 서방파제 등대 옆', 2, 33.235263, 126.362203],
+            ['안덕-14', '사계항 동방파제(춘지등대)', 2, 33.226173, 126.306329],
+            ['안덕-15', '화순항 동방파제 끝단(동측)', 2, 33.236263, 126.333220],
+            ['안덕-16', '화순금모래해수욕장 주차장 앞', 2, 33.240429, 126.334129],
+            ['안덕-17', '화순금모래해수욕장 종합상황실 앞', 2, 33.240312, 126.332855],
+            ['안덕-18', '화순 담수풀장 서쪽 외각', 2, 33.240941, 126.331123],
+            ['성산-1', '성산포 한도교 서측', 3, 33.468650, 126.924345],
+            ['성산-2', '성산포 한도교 동측', 3, 33.466826, 126.929297],
+            ['성산-3', '광치기 해안 맞은편(일출봉 입구)', 3, 33.457096, 126.927476],
+            ['성산-4', '신양해수욕장 화장실 입구', 3, 33.434713, 126.923943],
+            ['성산-5', '시흥리 포구 입구(송난포구)', 3, 33.478964, 126.909740],
+            ['성산-6', '시흥리 포구 동측(송난포구, 외항)', 3, 33.478190, 126.913297],
+            ['성산-7', '오조리 오조미야 앞', 3, 33.472434, 126.912956],
+            ['성산-8', '성산 오조포구 서쪽 방파제 입구', 3, 33.472146, 126.925743],
+            ['성산-9', '성산항 소형부두 중앙', 3, 33.469794, 126.928590],
+            ['성산-10', '성산외항 유,도선장 선착장 앞', 3, 33.473582, 126.933655],
+            ['성산-11', '우뭇개포구 해녀탈의장', 3, 33.462752, 126.938602],
+            ['성산-12', '수마포구 해안(성산 레포츠 앞 10m)', 3, 33.460816, 126.933894],
+            ['성산-13', '성산 광치기 해안 입구 일출봉측 20m', 3, 33.452015, 126.924224],
+            ['성산-14', '100주년 기념탑 동남측 10m', 3, 33.435223, 126.924300],
+            ['성산-15', '신양질러리포구 입구(아쿠아플라리넷 뒷편)', 3, 33.478199, 126.913326],
+            ['성산-16', '섭지코지 진입로 주차장방면 100m', 3, 33.431570, 126.925351],
+            ['성산-17', '섭지코지 주차장 중간지점 해안측', 3, 33.423509, 126.929960],
+            ['성산-18', '섭지코지 주차장 안쪽 끝', 3, 33.423439, 126.930389],
+            ['성산-19', '신양항 앞 해녀탈의장 내', 3, 33.428395, 126.916485],
+            ['성산-20', '신양포구(큰) 서방파제 입구', 3, 33.432232, 126.916057],
+            ['성산-21', '신양포구(큰) 동방파제 중앙', 3, 33.428793, 126.918248],
+            ['성산-22', '온평포구 방파제 ', 3, 33.401691, 126.904471],
+            ['성산-23', '온편포구 정자 인근  ', 3, 33.478141, 126.913332],
+            ['성산-24', '신산포구 서방파제 입구', 3, 33.382143, 126.881064],
+            ['성산-25', '신천포구 서방파제 입구', 3, 33.340058, 126.856749],
+            ['구좌-1', '세화포구', 3, 33.529100, 126.857323],
+            ['구좌-2', '세화해수욕장 서측', 3, 33.526735, 126.856519],
+            ['구좌-3', '세화해수욕장 중앙', 3, 33.524709, 126.859924],
+            ['구좌-4', '세화해수욕장 동측', 3, 33.524855, 126.862028],
+            ['구좌-5', '세화해수욕장 동측 주차장', 3, 33.524860, 126.861378],
+            ['구좌-6', '세화항 서측 방파제 끝', 3, 33.530520, 126.857510],
+            ['구좌-7', '평대리 2018-6번지 정자 옆', 3, 33.534061, 126.842591],
+            ['구좌-8', '평대해수욕장 서측 끝', 3, 33.534233, 126.840168],
+            ['구좌-9', '평대포구 중간', 3, 33.537597, 126.841294],
+            ['구좌-10', '행원리 오저여 옆', 3, 33.561284, 126.814976],
+            ['구좌-11', '코난해변 돌 테이블에서 바다방향 5m', 3, 33.557747, 126.811177],
+            ['구좌-12', '행원포구', 3, 33.557524, 126.807719],
+            ['구좌-13', '행원포구 서측 광장 인근', 3, 33.557128, 126.805828],
+            ['구좌-14', '하도포구 서측 방파제 초입부', 3, 33.527628, 126.882793],
+            ['구좌-15', '하도리 동동 포구', 3, 33.519948, 126.904258],
+            ['구좌-16', '하도새수욕장 화장실 벽면', 3, 33.513803, 126.898853],
+            ['구좌-17', '종달항 서방파제 끝', 3, 33.495697, 126.913237],
+            ['구좌-18', '맞은편 소규모 포구 입구', 3, 33.490571, 126.910775],
+            ['구좌-19', '맞은편 해안도로', 3, 33.483448, 126.901753],
+            ['김녕-1', '서김녕 방파제 끝', 3, 33.561036, 126.740831],
+            ['김녕-2', '김녕해수욕장 서측 방파제 내', 3, 33.558634, 126.755116],
+            ['김녕-3', '동복포구 내', 3, 33.555005, 126.714267],
+            ['김녕-4', '김녕 목지코지', 3, 33.562024, 126.729673],
+            ['김녕-5', '김녕항 서방파제 중간', 3, 33.560682, 126.739136],
+            ['김녕-6', '김녕항 동방파제 끝', 3, 33.559821, 126.740502],
+            ['김녕-7', '김녕포구 서방파제 중간', 3, 33.559600, 126.754851],
+            ['김녕-8', '김녕해수욕장 휴게점 앞', 3, 33.557264, 126.759635],
+            ['김녕-9', '김녕해안도로 해안가', 3, 33.565442, 126.772783],
+            ['김녕-10', '월정포구 동방파제 중간', 3, 33.557117, 126.795879],
+            ['김녕-11', '월정해수욕장 동측 끝', 3, 33.555006, 126.798483],
+            ['김녕-12', '김녕해안도로 구 해안초소 옆', 3, 33.564769, 126.763487],
+            ['김녕-13', '해안도로 월정 카약 인근', 3, 33.564407, 126.779174],
+            ['우도-1', '우도면 오봉리 하고수동 해수욕장 입구', 3, 33.513633, 126.957804],
+            ['우도-2', '우도면 서광리 산호사 해수욕장 내', 3, 33.502564, 126.943553],
+            ['우도-3', '천진항 방파제 끝 조명탑 인근', 3, 33.491975, 126.950433],
+            ['우도-4', '천진항 방파제 입구 아치 밑', 3, 33.492568, 126.951256],
+            ['우도-5', '하우목동항 방파제 중간 벽면', 3, 33.509007, 126.940710],
+            ['우도-6', '우도면 검멀레 해변', 3, 33.497433, 126.967228],
+            ['우도-7', '비양도입구 포구', 3, 33.513798, 126.965880],
+            ['우도-8', '스쿠버리조트 오른쪽 아랫길', 3, 33.496827, 126.968602],
+            ['조천-1', '신촌포구 방파제', 3, 33.537848, 126.618717],
+            ['조천-2', '조천포구 방파제', 3, 33.542090, 126.634102],
+            ['조천-3', '함덕 해수욕장 델문포 카페 입구', 3, 33.543463, 126.668464],
+            ['조천-4', '함덕 서우봉해변 동측 서우봉 입구', 3, 33.545131, 126.674572],
+            ['조천-5', '북촌포구 방파제', 3, 33.551413, 126.695644],
+            ['조천-6', '신흥리 포구', 3, 33.552005, 126.651928],
+            ['조천-7', '신촌 포구 입구', 3, 33.538800, 126.623400],
+            ['조천-8', '조천포구 조천진성 앞', 3, 33.540740, 126.634900],
+            ['조천-9', '신흥해수욕장 입구 정자 옆', 3, 33.549300, 126.647700],
+            ['조천-10', '신흥해수욕장 화장실 앞', 3, 33.551600, 126.648800],
+            ['조천-11', '신흥리 해안도로 작은포구 끝단', 3, 33.549300, 126.651100],
+            ['조천-12', '함덕정주항 정자 인근', 3, 33.546300, 126.660700],
+            ['조천-13', '오션그랜드호텔 맞은편 데크 전당매', 3, 33.543000, 126.665000],
+            ['조천-14', '까페 델문도 북측 교량가기 전 정자 앞', 3, 33.545100, 126.668300],
+            ['조천-15', '북촌포구', 3, 33.551200, 126.694200],
+            ['조천-16', '신흥리해수욕장 제일안쪽 끝 해녀탈의장옆 작은건물 북측벽', 3, 33.553100, 126.649500],
+            ['조천-17', '함덕해수욕장 계절식탁가게 맞은편 작은 컨테이너 뒤편', 3, 33.543000, 126.667700],
+            ['조천-18', '함덕정주항 동방파제 끝', 3, 33.548300, 126.661600],
+            ['조천-19', '조함해안로 355-7 좌측', 3, 33.549500, 126.655800],
+            ['조천-20', '조함해안로 410 작은방파제 난간 초입', 3, 33.547500, 126.660500],
+            ['조천-21', '신촌포구 서측 방파제 입구', 3, 33.538400, 126.617200],
+            ['조천-22', '신촌포구 서측 방파제 끝', 3, 33.539100, 126.617000],
+            ['남원-1', '큰엉해안경승지(해안가 서측)', 3, 33.271919, 126.700792],
+            ['남원-2', '위미리 종정동 포구', 3, 33.270218, 126.691459],
+            ['남원-3', '위미항 포구 동측 방파제', 3, 33.269885, 126.664225],
+            ['남원-4', '위미항 포구  서측 방파제', 3, 33.269714, 126.658903],
+            ['남원-5', '남원포구', 3, 33.277113, 126.719119],
+            ['남원-6', '태흥2리 포구', 3, 33.286829, 126.750577],
+            ['남원-7', '신흥1리 포구 기름탱크 옆', 3, 33.298335, 126.766410],
+            ['남원-8', '하례리 망장포구', 3, 33.259332, 126.639730],
+            ['남원-9', '진선수산영어조합법인 맞은편 건물 옆', 3, 33.283177, 126.748859],
+            ['남원-10', '위미 넵빌레하우스 바다쪽 30m', 3, 33.268640, 126.648590],
+            ['남원-11', '공천포구 내', 3, 33.263338, 126.641502],
+            ['남원-12', '남원 큰엉 인디언 추장바위 전망대', 3, 33.272879, 126.703193],
+            ['남원-13', '일화국제연수원 앞 방파제', 3, 33.275164, 126.712168],
+            ['남원-14', '태흥1리 쉼터에서 내려가는 길', 3, 33.279902, 126.738678],
+            ['남원-15', '공천포 서방파제 끝단', 3, 33.263332, 126.641579],
+            ['남원-16', '공천포 동측 해변 입구 계단 밑', 3, 33.266612, 126.643445],
+            ['남원-17', '위미항 중앙 물양장 입구', 3, 33.271461, 126.661853],
+            ['남원-18', '태흥3리포구 입구에서 20m', 3, 33.290794, 126.760283],
+            ['표선-1', '당케포구 동측 등대 앞', 3, 33.327612, 126.846733],
+            ['표선-2', '당케포구 서측 끝 부분', 3, 33.327054, 126.845352],
+            ['표선-3', '하천포구 입구', 3, 33.336165, 126.848809],
+            ['표선-4', '표선 소금막해변 백사자 동쪽 계단', 3, 33.331921, 126.842467],
+            ['표선-5', '표선 소금막해변 백사장 중앙', 3, 33.331509, 126.842321],
+            ['표선-6', '표선 소금막해변 백사장 서쪽', 3, 33.330603, 126.842049],
+            ['표선-7', '표선 소금막해변 탈의실 앞', 3, 33.332378, 126.843261],
+            ['표선-8', '표선해수욕장 음수대 앞 상황실 동측', 3, 33.325897, 126.840415],
+            ['표선-9', '표선해수욕장 종합상황실 앞', 3, 33.325986, 126.842413],
+            ['표선-10', '표선해수욕장 상황실 정자 앞', 3, 33.326060, 126.842547],
+            ['표선-11', '표선해수욕장 금데기 횟집 인근', 3, 33.326533, 126.844126],
+            ['표선-12', '민속해안로 532', 3, 33.320903, 126.846959],
+            ['표선-13', '표선 세화포구 입구', 3, 33.303346, 126.805357],
+            ['표선-14', '표선 토산포구 방파제 중앙', 3, 33.303997, 126.789496],
+            ['조천-23', '섬오름식당 앞 방파제', 3, 33.549944, 126.655858],
+            ['조천-24', '한라수산 양식장 인근', 3, 33.552330, 126.697756]
+        ];
+
+        var equipmentList = rawData.map(function(item) {
+            return { id: item[0], location: item[1], station: stationNames[item[2]], lat: item[3], lng: item[4] };
+        });
+
+        function updateTopStats() {
+            var jejuCount = equipmentList.filter(eq => eq.station === '제주').length;
+            var seogwipoCount = equipmentList.filter(eq => eq.station === '서귀포').length;
+            var seobuCount = equipmentList.filter(eq => eq.station === '서부').length;
+            var dongbuCount = equipmentList.filter(eq => eq.station === '동부').length;
+            
+            document.querySelector('.stat-total strong').innerText = equipmentList.length;
+            document.getElementById('stat-jeju').innerText = jejuCount;
+            document.getElementById('stat-seogwipo').innerText = seogwipoCount;
+            document.getElementById('stat-seobu').innerText = seobuCount;
+            document.getElementById('stat-dongbu').innerText = dongbuCount;
+        }
+
+        function toggleNeedsBox() {
+            var status = document.getElementById('input-status').value;
+            var box = document.getElementById('detail-needs-box');
+            if (status !== '정상') {
+                box.style.display = 'block';
+                if(status === '수리필요' && parseInt(document.getElementById('need-box').value) === 0) {
+                    document.getElementById('need-box').value = 1;
+                }
+            } else {
+                box.style.display = 'none';
+                document.getElementById('need-box').value = 0;
+                document.getElementById('need-ring').value = 0;
+                document.getElementById('need-vest').value = 0;
+                document.getElementById('need-rope').value = 0;
+            }
+        }
+
+        function isInspectedCurrentPeriod(eqId) {
+            var now = new Date(); 
+            var currentMonth = now.getMonth() + 1;
+            var currentYear = now.getFullYear();
+            var records = historyData.filter(h => h.id === eqId);
+            
+            for (var i = 0; i < records.length; i++) {
+                var d = new Date(records[i].date);
+                if (d.getFullYear() !== currentYear) continue; 
+                var m = d.getMonth() + 1;
+
+                if (currentMonth >= 1 && currentMonth <= 3) { if (m >= 1 && m <= 3) return true; } 
+                else if (currentMonth >= 10 && currentMonth <= 12) { if (m >= 10 && m <= 12) return true; } 
+                else { if (m === currentMonth) return true; }
+            }
+            return false;
+        }
+
+        function getCurrentPeriodLabel() {
+            var now = new Date();
+            var m = now.getMonth() + 1;
+            if (m >= 1 && m <= 3) return "1분기 (1~3월)";
+            if (m >= 10 && m <= 12) return "4분기 (10~12월)";
+            return m + "월";
+        }
+
+        function isMobile() {
+            return window.matchMedia('(max-width: 768px)').matches;
+        }
+
+        function openMobileForm() {
+            if (isMobile()) document.body.classList.add('mobile-form-open');
+        }
+
+        function closeMobileForm() {
+            document.body.classList.remove('mobile-form-open');
+            if (map) setTimeout(function() { map.relayout(); }, 10);
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.view-section').forEach(view => view.classList.remove('active'));
+
+            var targetBtn = document.querySelector(`.tab-btn[data-tab="${tabName}"]`);
+            if(targetBtn) targetBtn.classList.add('active');
+            
+            var targetView = document.getElementById(`view-${tabName}`);
+            if(targetView) targetView.classList.add('active');
+
+            if(tabName === 'history') renderHistory();
+            if(tabName === 'repairs') renderRepairs();
+            if(tabName === 'needs') renderNeeds();
+            if(tabName === 'status') renderStatus();
+
+            // 📱 모바일: 목록 탭들은 전체화면으로, "폼" 탭은 지도가 보이는 화면으로
+            if (isMobile()) {
+                if (tabName === 'form') { closeMobileForm(); } else { openMobileForm(); }
+            }
+
+            // 🟢 모바일 환경 등에서 탭 전환 시 지도가 깨지는 빈 화면 현상 방지
+            if(map) {
+                setTimeout(function() {
+                    map.relayout();
+                }, 10);
+            }
+        }
+
+        async function deleteRecord(docId) {
+            var pw = prompt('🔒 이 점검 기록을 삭제하려면 비밀번호를 입력하세요.');
+            if (pw === null) return; // 취소함
+            if (pw !== '0000') { alert('❌ 비밀번호가 올바르지 않습니다.'); return; }
+            if (!confirm('정말 삭제하시겠습니까?\n삭제한 기록은 되돌릴 수 없습니다.')) return;
+
+            try {
+                await deleteInspectionFromFirestore(docId);
+                historyData = historyData.filter(function(r) { return r.docId !== docId; });
+                renderHistory();
+            } catch (err) {
+                console.error(err);
+                alert('❌ 삭제 중 오류가 발생했습니다. 인터넷 연결을 확인해주세요.\n\n(' + err.message + ')');
+            }
+        }
+
+        function renderHistory() {
+            var container = document.getElementById('history-container');
+            if(historyData.length === 0) {
+                container.innerHTML = '<div class="empty-history">등록된 점검 실적이 없습니다.</div>';
+                return;
+            }
+
+            var html = '';
+            historyData.forEach(function(item) {
+                var memoHtml = item.memo ? `<div class="h-memo"><strong>특이사항:</strong><br>${item.memo.replace(/\n/g, '<br>')}</div>` : '';
+                
+                var badgeHtml = '';
+                if(item.needBox > 0 || item.needRing > 0 || item.needVest > 0 || item.needRope > 0) {
+                    badgeHtml = `<div class="repair-badge-wrap">`;
+                    if(item.needBox > 0) badgeHtml += `<span class="repair-badge badge-box">📦 함체수리 ${item.needBox}개소</span>`;
+                    if(item.needRing > 0) badgeHtml += `<span class="repair-badge badge-ring">🛟 구명환 ${item.needRing}개 필요</span>`;
+                    if(item.needVest > 0) badgeHtml += `<span class="repair-badge badge-vest">🦺 구명조끼 ${item.needVest}개 필요</span>`;
+                    if(item.needRope > 0) badgeHtml += `<span class="repair-badge badge-rope">🪢 유도로프 ${item.needRope}개 필요</span>`;
+                    badgeHtml += `</div>`;
+                }
+
+                var photoHtml = '';
+                if(item.photoExt || item.photoInt) {
+                    photoHtml = `<div class="history-photos">`;
+                    if(item.photoExt) photoHtml += `<div><img src="${item.photoExt}" onclick="openImageViewer(this.src, '외부 사진')"><span>외부</span></div>`;
+                    if(item.photoInt) photoHtml += `<div><img src="${item.photoInt}" onclick="openImageViewer(this.src, '내부 사진')"><span>내부</span></div>`;
+                    photoHtml += `</div>`;
+                }
+                
+                html += `
+                    <div class="history-item">
+                        <div class="h-header">
+                            <span class="h-title">${item.id}</span>
+                            <span style="display:flex; align-items:center; gap:8px;">
+                                <span class="h-date">${item.date}</span>
+                                <button class="btn-delete" onclick="deleteRecord('${item.docId}')" title="이 기록 삭제">🗑</button>
+                            </span>
+                        </div>
+                        <div class="h-info">📍 위치: ${item.location}</div>
+                        <div class="h-info">👤 작성자: <strong>${item.author}</strong></div>
+                        <span class="h-status">${item.status}</span>
+                        ${badgeHtml}
+                        ${memoHtml}
+                        ${photoHtml}
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function renderRepairs() {
+            var container = document.getElementById('repairs-container');
+            
+            var latestRecords = {};
+            historyData.forEach(function(rec) {
+                if(!latestRecords[rec.id]) {
+                    latestRecords[rec.id] = rec;
+                }
+            });
+
+            var repairItems = Object.values(latestRecords).filter(function(r) {
+                return (r.needBox > 0 || r.needRing > 0 || r.needVest > 0 || r.needRope > 0 || r.status !== '정상');
+            });
+
+            var totBox = 0, totRing = 0, totVest = 0, totRope = 0;
+            repairItems.forEach(r => {
+                totBox += (r.needBox || 0);
+                totRing += (r.needRing || 0);
+                totVest += (r.needVest || 0);
+                totRope += (r.needRope || 0);
+            });
+
+            var html = `
+                <div style="background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #fed7aa; margin-bottom: 15px; background: #fffaf5;">
+                    <h3 style="margin: 0 0 10px 0; font-size: 15px; color: #c2410c;">🛠️ 제주 전체 총 소요 수량</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 13px;">
+                        <div style="background:#fff; padding:8px; border-radius:6px; border:1px solid #fed7aa;">📦 함체 수리: <strong style="color:#ea580c;">${totBox}</strong>건</div>
+                        <div style="background:#fff; padding:8px; border-radius:6px; border:1px solid #fecaca;">🛟 구명환 망실: <strong style="color:#dc2626;">${totRing}</strong>개</div>
+                        <div style="background:#fff; padding:8px; border-radius:6px; border:1px solid #fde68a;">🦺 구명조끼 망실: <strong style="color:#d97706;">${totVest}</strong>벌</div>
+                        <div style="background:#fff; padding:8px; border-radius:6px; border:1px solid #c7d2fe;">🪢 유도로프 망실: <strong style="color:#4f46e5;">${totRope}</strong>개</div>
+                    </div>
+                </div>
+            `;
+
+            if(repairItems.length === 0) {
+                html += '<div class="empty-history">현재 보수 및 보충이 필요한 장비함이 없습니다! ✨</div>';
+            } else {
+                var stations = ['제주', '서귀포', '서부', '동부'];
+                stations.forEach(st => {
+                    var stRepairs = repairItems.filter(r => {
+                        var eq = equipmentList.find(e => e.id === r.id);
+                        return eq && eq.station === st;
+                    });
+
+                    if(stRepairs.length > 0) {
+                        html += `
+                            <details open style="margin-bottom: 10px; background: #fff; border: 1px solid #cbd5e1; border-radius: 6px;">
+                                <summary style="background: #f8fafc; padding: 12px; font-weight: bold; color: #1e3a8a; cursor: pointer; outline: none; border-radius: 6px;">
+                                    🏢 ${st}소방서 (${stRepairs.length}개소 소요)
+                                </summary>
+                                <div style="padding: 10px; background: #fafafa; border-top: 1px solid #cbd5e1;">
+                        `;
+
+                        stRepairs.forEach(item => {
+                            var eq = equipmentList.find(e => e.id === item.id);
+                            var badgeList = '';
+                            if(item.needBox > 0) badgeList += `<span class="repair-badge badge-box">📦 함체수리 ${item.needBox}개소</span>`;
+                            if(item.needRing > 0) badgeList += `<span class="repair-badge badge-ring">🛟 구명환 ${item.needRing}개</span>`;
+                            if(item.needVest > 0) badgeList += `<span class="repair-badge badge-vest">🦺 구명조끼 ${item.needVest}벌</span>`;
+                            if(item.needRope > 0) badgeList += `<span class="repair-badge badge-rope">🪢 로프 ${item.needRope}개</span>`;
+
+                            html += `
+                                <div class="history-item" style="cursor:pointer; padding: 12px; margin-bottom: 8px;" onclick="moveToMap(${eq.lat}, ${eq.lng}, '${eq.id}')">
+                                    <div class="h-title" style="font-size: 14px; display:flex; justify-content:space-between;">
+                                        <span>${item.id}</span>
+                                        <span style="font-size:12px; color:#64748b;">${item.date}</span>
+                                    </div>
+                                    <div class="h-info" style="font-size: 12px; margin: 4px 0;">📍 ${item.location}</div>
+                                    <div class="repair-badge-wrap">${badgeList}</div>
+                                    ${item.memo ? `<div style="font-size:12px; color:#475569; margin-top:6px; background:#fff; padding:6px; border-radius:4px; border:1px solid #e2e8f0;">💬 ${item.memo}</div>` : ''}
+                                </div>
+                            `;
+                        });
+
+                        html += `</div></details>`;
+                    }
+                });
+            }
+
+            container.innerHTML = html;
+        }
+
+        function renderNeeds() {
+            var container = document.getElementById('needs-container');
+            var needsList = equipmentList.filter(eq => !isInspectedCurrentPeriod(eq.id));
+            var periodLabel = getCurrentPeriodLabel();
+            
+            var html = `<div style="margin-bottom: 15px; font-weight: bold; color: #b91c1c;">
+                            🚨 ${periodLabel} 전체 미점검 장비: ${needsList.length}개
+                        </div>`;
+                        
+            if(needsList.length === 0) {
+                html += '<div class="empty-history">이번 기간 점검이 모두 완료되었습니다! 🎉</div>';
+            } else {
+                var stations = ['제주', '서귀포', '서부', '동부'];
+                stations.forEach(st => {
+                    var stNeedsList = needsList.filter(eq => eq.station === st);
+                    if (stNeedsList.length > 0) {
+                        html += `
+                            <details style="margin-bottom: 10px; background: #fff; border: 1px solid #cbd5e1; border-radius: 6px;">
+                                <summary style="background: #f1f5f9; padding: 12px; font-weight: bold; color: #1e3a8a; cursor: pointer; outline: none; border-radius: 6px;">
+                                    🏢 ${st}소방서
+                                    <span style="float: right; background: #fee2e2; color: #991b1b; padding: 2px 8px; border-radius: 12px; font-size: 12px;">미점검 ${stNeedsList.length}개</span>
+                                </summary>
+                                <div style="padding: 10px; background: #fafafa; max-height: 400px; overflow-y: auto; border-top: 1px solid #cbd5e1;">
+                        `;
+                        stNeedsList.forEach(eq => {
+                            html += `
+                                <div class="history-item" style="cursor:pointer; padding: 10px; margin-bottom: 8px; box-shadow: none; border: 1px solid #e2e8f0;" onclick="moveToMap(${eq.lat}, ${eq.lng}, '${eq.id}')">
+                                    <div class="h-title" style="font-size: 14px;">${eq.id}</div>
+                                    <div class="h-info" style="font-size: 12px; margin-bottom: 0;">📍 ${eq.location}</div>
+                                </div>
+                            `;
+                        });
+                        html += `</div></details>`;
+                    }
+                });
+            }
+            container.innerHTML = html;
+        }
+
+        function renderStatus() {
+            var container = document.getElementById('status-container');
+            var periodLabel = getCurrentPeriodLabel();
+            var total = equipmentList.length;
+            var inspected = equipmentList.filter(eq => isInspectedCurrentPeriod(eq.id)).length;
+            var notInspected = total - inspected;
+            var pct = total > 0 ? ((inspected / total) * 100).toFixed(1) : 0;
+
+            var html = `
+                <div style="background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 20px;">
+                    <h3 style="margin-top:0; font-size:16px; color:#1e3a8a;">📊 ${periodLabel} 전체 점검률</h3>
+                    <div style="background:#e2e8f0; border-radius:10px; height:20px; width:100%; overflow:hidden; margin: 10px 0;">
+                        <div style="background:#2563eb; width:${pct}%; height:100%;"></div>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; font-size:14px; font-weight:bold;">
+                        <span style="color:#2563eb">완료: ${inspected}건</span>
+                        <span style="color:#b91c1c">미완료: ${notInspected}건</span>
+                    </div>
+                </div>
+            `;
+            
+            var stations = ['제주', '서귀포', '서부', '동부'];
+            stations.forEach(st => {
+                var stList = equipmentList.filter(eq => eq.station === st);
+                if (stList.length === 0) return;
+                var stIns = stList.filter(eq => isInspectedCurrentPeriod(eq.id)).length;
+                var stPct = ((stIns / stList.length) * 100).toFixed(0);
+
+                html += `
+                    <div class="history-item" style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;" onclick="showStationList('${st}')">
+                        <div>
+                            <div class="h-title">${st}소방서</div>
+                            <div class="h-info">총 ${stList.length}개</div>
+                        </div>
+                        <div style="text-align:right;">
+                            <div style="font-size:14px; font-weight:bold; color:#2563eb;">${stIns} / ${stList.length}</div>
+                            <div style="font-size:12px; color:#64748b;">${stPct}% 완료</div>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function showStationList(stationName) {
+            switchTab('list');
+            var container = document.getElementById('list-container');
+            var filtered = equipmentList.filter(eq => eq.station === stationName);
+            
+            var html = `
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px;">
+                    <h3 style="margin:0; font-size:16px; color:#1e3a8a;">🏢 ${stationName}소방서 목록 (${filtered.length}개)</h3>
+                    <button onclick="switchTab('status')" style="background:#f1f5f9; border:1px solid #cbd5e1; padding:5px 10px; border-radius:4px; cursor:pointer;">🔙 뒤로</button>
+                </div>
+            `;
+            
+            filtered.forEach(eq => {
+                var isDone = isInspectedCurrentPeriod(eq.id);
+                var statusBadge = isDone 
+                    ? '<span style="background:#dcfce7; color:#166534; padding:2px 6px; border-radius:4px; font-size:11px;">🟢 완료</span>' 
+                    : '<span style="background:#fee2e2; color:#991b1b; padding:2px 6px; border-radius:4px; font-size:11px;">🔴 미점검</span>';
+                    
+                html += `
+                    <div class="history-item" style="cursor:pointer;" onclick="moveToMap(${eq.lat}, ${eq.lng}, '${eq.id}')">
+                        <div class="h-title" style="display:flex; justify-content:space-between;">
+                            ${eq.id} ${statusBadge}
+                        </div>
+                        <div class="h-info">📍 ${eq.location}</div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function searchEquipment() {
+            var input = document.getElementById('search-input');
+            var keyword = input.value.trim();
+            if (!keyword) return;
+
+            var normalize = function(s) { return s.replace(/\s/g, '').toLowerCase(); };
+            var target = normalize(keyword);
+
+            var eq = equipmentList.find(e => normalize(e.id) === target);
+            if (!eq) eq = equipmentList.find(e => normalize(e.id).includes(target));
+            if (!eq) eq = equipmentList.find(e => e.location.includes(keyword));
+
+            if (eq) {
+                moveToMap(eq.lat, eq.lng, eq.id);
+                input.value = '';
+                input.blur();
+            } else {
+                alert('🔍 "' + keyword + '" 에 해당하는 장비함을 찾을 수 없습니다.\n\n예) 한림-01 처럼 정확한 관리번호를 입력해보세요.');
+            }
+        }
+
+        function toggleRoadview() {
+            var container = document.getElementById('roadview');
+            var emptyMsg = document.getElementById('roadview-empty');
+            var btn = document.getElementById('roadview-toggle-btn');
+
+            if (container.style.display === 'block') {
+                container.style.display = 'none';
+                emptyMsg.style.display = 'none';
+                btn.innerText = '로드뷰 보기';
+                return;
+            }
+
+            var lat = parseFloat(document.getElementById('input-lat').value);
+            var lng = parseFloat(document.getElementById('input-lng').value);
+            if (isNaN(lat) || isNaN(lng)) { alert('위치 좌표를 확인할 수 없습니다.'); return; }
+
+            var position = new kakao.maps.LatLng(lat, lng);
+
+            container.style.display = 'block';
+            emptyMsg.style.display = 'none';
+            btn.innerText = '⏳ 확인 중...';
+            btn.disabled = true;
+
+            if (!roadviewInstance) roadviewInstance = new kakao.maps.Roadview(container);
+            if (!roadviewClient) roadviewClient = new kakao.maps.RoadviewClient();
+
+            roadviewClient.getNearestPanoId(position, 50, function(panoId) {
+                btn.disabled = false;
+                if (panoId === null) {
+                    container.style.display = 'none';
+                    emptyMsg.style.display = 'block';
+                    btn.innerText = '로드뷰 보기';
+                } else {
+                    roadviewInstance.setPanoId(panoId, position);
+                    btn.innerText = '로드뷰 닫기';
+                    setTimeout(function() { roadviewInstance.relayout(); }, 50);
+                }
+            });
+        }
+
+        function resetRoadview() {
+            var container = document.getElementById('roadview');
+            var emptyMsg = document.getElementById('roadview-empty');
+            var btn = document.getElementById('roadview-toggle-btn');
+            container.style.display = 'none';
+            emptyMsg.style.display = 'none';
+            btn.innerText = '로드뷰 보기';
+            btn.disabled = false;
+        }
+
+        function moveToMap(lat, lng, id) {
+            var pos = new kakao.maps.LatLng(lat, lng);
+            
+            // 🟢 지도가 회색 빈 화면으로 깨지는 현상을 방지하기 위해 setLevel 후 즉시 setCenter 실행 (panTo 애니메이션 제외)
+            map.setLevel(3);
+            map.setCenter(pos);
+            setTimeout(function() { map.relayout(); map.setCenter(pos); }, 10);
+
+            var eq = equipmentList.find(e => e.id === id);
+            if(eq) {
+                switchTab('form');
+                document.getElementById('default-msg').style.display = 'none';
+                document.getElementById('inspect-form').style.display = 'block';
+                
+                document.getElementById('label-station').innerText = eq.station + '소방서';
+                document.getElementById('label-id').innerText = eq.id;
+                document.getElementById('label-loc').innerText = eq.location;
+                
+                document.getElementById('input-lat').value = eq.lat;
+                document.getElementById('input-lng').value = eq.lng;
+
+                document.getElementById('input-date').valueAsDate = new Date();
+                document.getElementById('input-status').value = '정상';
+                toggleNeedsBox();
+                document.getElementById('input-memo').value = '';
+                
+                document.getElementById('input-photo-ext').value = '';
+                document.getElementById('input-photo-int').value = '';
+                document.getElementById('preview-ext').style.display = 'none';
+                document.getElementById('preview-int').style.display = 'none';
+                document.getElementById('preview-ext').src = '';
+                document.getElementById('preview-int').src = '';
+
+                loadRecentPhotos(id);
+                resetRoadview();
+                openMobileForm();
+            }
+        }
+
+        function loadRecentPhotos(id) {
+            var records = historyData.filter(r => r.id === id);
+            var recentExt = records.find(r => r.photoExt);
+            var recentInt = records.find(r => r.photoInt);
+
+            var container = document.getElementById('recent-photos-container');
+            var wrapExt = document.getElementById('thumb-ext-wrap');
+            var wrapInt = document.getElementById('thumb-int-wrap');
+            var imgExt = document.getElementById('thumb-ext');
+            var imgInt = document.getElementById('thumb-int');
+
+            if(recentExt || recentInt) {
+                container.style.display = 'block';
+                if(recentExt) { imgExt.src = recentExt.photoExt; wrapExt.style.display = 'block'; } else { wrapExt.style.display = 'none'; }
+                if(recentInt) { imgInt.src = recentInt.photoInt; wrapInt.style.display = 'block'; } else { wrapInt.style.display = 'none'; }
+            } else {
+                container.style.display = 'none';
+            }
+        }
+
+        function getLocationFromCenter() {
+            var center = map.getCenter();
+            document.getElementById('input-lat').value = center.getLat().toFixed(6);
+            document.getElementById('input-lng').value = center.getLng().toFixed(6);
+        }
+
+        function previewPhoto(event, previewId) {
+            var reader = new FileReader();
+            var imgPreview = document.getElementById(previewId);
+            reader.onload = function(){
+                imgPreview.src = reader.result;
+                imgPreview.style.display = 'block';
+            };
+            if(event.target.files[0]) {
+                reader.readAsDataURL(event.target.files[0]);
+            } else {
+                imgPreview.style.display = 'none';
+                imgPreview.src = '';
+            }
+        }
+
+        function openImageViewer(src, label) {
+            document.getElementById('viewer-img').src = src;
+            document.getElementById('viewer-label').innerText = label;
+            document.getElementById('image-viewer').style.display = 'flex';
+        }
+        function closeImageViewer() {
+            document.getElementById('image-viewer').style.display = 'none';
+        }
+
+        kakao.maps.load(function() {
+            updateTopStats();
+            var container = document.getElementById('map');
+            var options = { center: new kakao.maps.LatLng(33.37, 126.55), level: 10 };
+            map = new kakao.maps.Map(container, options);
+
+            var clusterer = new kakao.maps.MarkerClusterer({ map: map, averageCenter: true, minLevel: 8 });
+            var markers = [];
+            var overlays = []; 
+            infowindow = new kakao.maps.InfoWindow({zIndex:1});
+
+            equipmentList.forEach(function(eq) {
+                var pos = new kakao.maps.LatLng(eq.lat, eq.lng);
+                var marker = new kakao.maps.Marker({ position: pos });
+                var labelOverlay = new kakao.maps.CustomOverlay({
+                    position: pos, content: '<div class="marker-label">' + eq.id + '</div>', yAnchor: -0.4
+                });
+                
+                markerMap[eq.id] = marker;
+                overlayMap[eq.id] = labelOverlay;
+                overlays.push(labelOverlay); 
+
+                kakao.maps.event.addListener(marker, 'click', function() {
+                    infowindow.setContent('<div class="info-title">' + eq.id + '</div>');
+                    infowindow.open(map, marker);
+                    moveToMap(eq.lat, eq.lng, eq.id);
+                });
+                markers.push(marker);
+            });
+
+            clusterer.addMarkers(markers);
+
+            function updateLabelVisibility() {
+                var level = map.getLevel();
+                if (level <= 6) { overlays.forEach(function(o) { o.setMap(map); }); } 
+                else { overlays.forEach(function(o) { o.setMap(null); }); }
+            }
+            updateLabelVisibility();
+            kakao.maps.event.addListener(map, 'zoom_changed', updateLabelVisibility);
+        });
+
+        async function saveData() {
+            var id = document.getElementById('label-id').innerText;
+            var loc = document.getElementById('label-loc').innerText;
+            var date = document.getElementById('input-date').value;
+            var author = document.getElementById('input-author').value;
+            var status = document.getElementById('input-status');
+            var statusText = status.options[status.selectedIndex].text;
+            var memo = document.getElementById('input-memo').value;
+            
+            var needBox = parseInt(document.getElementById('need-box').value) || 0;
+            var needRing = parseInt(document.getElementById('need-ring').value) || 0;
+            var needVest = parseInt(document.getElementById('need-vest').value) || 0;
+            var needRope = parseInt(document.getElementById('need-rope').value) || 0;
+
+            var extImg = document.getElementById('preview-ext');
+            var intImg = document.getElementById('preview-int');
+            var extFile = document.getElementById('input-photo-ext').files[0];
+            var intFile = document.getElementById('input-photo-int').files[0];
+            
+            var newLat = parseFloat(document.getElementById('input-lat').value);
+            var newLng = parseFloat(document.getElementById('input-lng').value);
+
+            if (!date) { alert('점검 일자를 입력해주세요.'); return; }
+            if (!author.trim()) { alert('작성자(점검자)를 입력해주세요.'); document.getElementById('input-author').focus(); return; }
+
+            var saveBtn = document.querySelector('.btn-save');
+            var originalBtnText = saveBtn.innerText;
+            saveBtn.disabled = true;
+
+            try {
+                saveBtn.innerText = '⏳ 사진 압축 및 업로드 중...';
+                // 장비함마다 외부/내부 사진 자리를 하나씩만 두고 새 사진으로 교체합니다.
+                var photoExtSrc = extFile ? await uploadToCloudinary(extFile, 'jeju_soban/' + id + '_ext') : null;
+                var photoIntSrc = intFile ? await uploadToCloudinary(intFile, 'jeju_soban/' + id + '_int') : null;
+
+                var eqIndex = equipmentList.findIndex(e => e.id === id);
+                var isLocationChanged = false;
+
+                if(eqIndex !== -1) {
+                    if(equipmentList[eqIndex].lat !== newLat || equipmentList[eqIndex].lng !== newLng) {
+                        equipmentList[eqIndex].lat = newLat;
+                        equipmentList[eqIndex].lng = newLng;
+                        isLocationChanged = true;
+                        
+                        var newPos = new kakao.maps.LatLng(newLat, newLng);
+                        if (markerMap[id]) markerMap[id].setPosition(newPos);
+                        if (overlayMap[id]) overlayMap[id].setPosition(newPos);
+                        
+                        memo = "[📍이설되어 좌표수정됨] " + memo;
+                    }
+                }
+
+                var newRecord = {
+                    id: id,
+                    location: loc,
+                    date: date,
+                    author: author,
+                    status: statusText,
+                    memo: memo,
+                    needBox: needBox,
+                    needRing: needRing,
+                    needVest: needVest,
+                    needRope: needRope,
+                    photoExt: photoExtSrc,
+                    photoInt: photoIntSrc 
+                };
+
+                saveBtn.innerText = '⏳ 서버에 저장 중...';
+                var newDocId = await saveInspectionToFirestore(newRecord);
+                newRecord.docId = newDocId;
+
+                historyData.unshift(newRecord);
+
+                var alertMsg = '✅ [' + id + '] 점검결과 저장 완료!\n\n작성자 : ' + author + '\n상태 : ' + statusText;
+                if(needBox > 0 || needRing > 0 || needVest > 0 || needRope > 0) {
+                    alertMsg += '\n\n🛠️ 소요 등록 내역:';
+                    if(needBox > 0) alertMsg += '\n• 함체 수리: ' + needBox + '건';
+                    if(needRing > 0) alertMsg += '\n• 구명환: ' + needRing + '개';
+                    if(needVest > 0) alertMsg += '\n• 구명조끼: ' + needVest + '벌';
+                    if(needRope > 0) alertMsg += '\n• 유도로프: ' + needRope + '개';
+                }
+                if(isLocationChanged) { alertMsg += '\n\n⚠️ 위치(좌표)가 성공적으로 변경되었습니다.'; }
+                alert(alertMsg);
+                
+                document.getElementById('input-status').value = '정상';
+                toggleNeedsBox();
+                document.getElementById('input-memo').value = '';
+                document.getElementById('input-photo-ext').value = '';
+                document.getElementById('input-photo-int').value = '';
+                extImg.style.display = 'none'; extImg.src = '';
+                intImg.style.display = 'none'; intImg.src = '';
+
+                switchTab('history');
+            } catch (err) {
+                console.error(err);
+                alert('❌ 저장 중 오류가 발생했습니다. 인터넷 연결을 확인하고 다시 시도해주세요.\n\n(' + err.message + ')');
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.innerText = originalBtnText;
+            }
+        }
+
+        // 📌 HTML의 onclick="..." 에서 호출할 수 있도록 전역(window)에 등록
+        window.showStationList = showStationList;
+        window.switchTab = switchTab;
+        window.getLocationFromCenter = getLocationFromCenter;
+        window.toggleNeedsBox = toggleNeedsBox;
+        window.previewPhoto = previewPhoto;
+        window.saveData = saveData;
+        window.openImageViewer = openImageViewer;
+        window.closeImageViewer = closeImageViewer;
+        window.moveToMap = moveToMap;
+        window.searchEquipment = searchEquipment;
+        window.toggleRoadview = toggleRoadview;
+        window.deleteRecord = deleteRecord;
+        window.closeMobileForm = closeMobileForm;
+
+        // 📱 드래그 핸들: 위로 밀면 전체화면(지도 숨김), 아래로 밀면 지도 화면으로
+        (function() {
+            var handle = document.getElementById('drag-handle');
+            if (!handle) return;
+            var startY = null;
+
+            handle.addEventListener('touchstart', function(e) {
+                startY = e.touches[0].clientY;
+            }, { passive: true });
+
+            handle.addEventListener('touchend', function(e) {
+                if (startY === null) return;
+                var endY = e.changedTouches[0].clientY;
+                var diff = startY - endY; // 양수면 위로 밀었다는 뜻
+                startY = null;
+
+                if (diff > 30) {
+                    openMobileForm();
+                } else if (diff < -30) {
+                    closeMobileForm();
+                } else {
+                    // 살짝 밀거나 그냥 탭한 경우: 현재 상태를 반대로 전환
+                    if (document.body.classList.contains('mobile-form-open')) closeMobileForm();
+                    else openMobileForm();
+                }
+            });
+        })();
+    </script>
+</body>
+</html>
