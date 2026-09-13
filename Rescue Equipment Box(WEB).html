@@ -99,14 +99,6 @@
         
         .preview-img { display: none; width: 100%; height: 100px; object-fit: cover; margin-top: 8px; border-radius: 6px; border: 1px solid var(--line); }
 
-        /* 🧭 로드뷰 영역 */
-        .roadview-box { background: #FFF4E6; border: 1px solid #F5C99A; border-radius: 10px; padding: 12px; margin-bottom: 15px; }
-        .roadview-header { display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 700; color: var(--ink); }
-        .roadview-header button { padding: 6px 12px; background: var(--fire); color: white; border: none; border-radius: 999px; font-size: 12px; font-weight: 700; cursor: pointer; }
-        .roadview-header button:hover { background: var(--fire-dark); }
-        #roadview { display: none; width: 100%; height: 220px; border-radius: 8px; overflow: hidden; margin-top: 10px; background: #ddd; }
-        #roadview-empty { display: none; font-size: 12px; color: var(--muted); margin-top: 8px; }
-
         .btn-save { width: 100%; padding: 15px; background: var(--alarm); color: white; border: none; border-radius: 999px; font-size: 16px; font-weight: 700; cursor: pointer; margin-top: 10px; box-shadow: 0 4px 14px rgba(244,81,30,0.32); transition: 0.15s; }
         .btn-save:hover { background: var(--alarm-dark); box-shadow: 0 4px 14px rgba(199,61,18,0.4); }
         .btn-save:disabled { background: #C7CDD3; box-shadow: none; cursor: default; }
@@ -122,6 +114,22 @@
         .history-item .h-info { font-size: 13px; color: var(--muted); margin-bottom: 4px; word-break: keep-all; }
         .history-item .h-status { display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; background: #FCF0D6; color: var(--amber); margin-top: 4px; }
         .history-item .h-memo { background: #F7F9FA; padding: 10px; border-radius: 8px; font-size: 13px; color: var(--ink); margin-top: 10px; border: 1px dashed var(--line); }
+
+        /* 🟢🟡🔴🟠 실적 카드: 점검 상태별 색상 구분 */
+        .history-item.status-ok { background: #F1FAF4; border-color: #BFE6CE; }
+        .history-item.status-repair { background: #FFFAEE; border-color: #F0DDA0; }
+        .history-item.status-loss { background: #FDEEEC; border-color: #F1BEB6; }
+        .history-item.status-mixed { background: #FFF3E8; border-color: #F3CDA0; }
+
+        .h-title.status-ok { color: #217A4C !important; }
+        .h-title.status-repair { color: #B8860B !important; }
+        .h-title.status-loss { color: #C0392B !important; }
+        .h-title.status-mixed { color: #C56A17 !important; }
+
+        .h-status.status-ok { background: #DDF3E4; color: #217A4C; }
+        .h-status.status-repair { background: #FBEBC3; color: #916307; }
+        .h-status.status-loss { background: #F8D6D1; color: #A5301F; }
+        .h-status.status-mixed { background: #FBE0C3; color: #A5540E; }
         
         .history-photos { display: flex; gap: 10px; margin-top: 10px; }
         .history-photos > div { flex: 1; text-align: center; font-size: 11px; color: var(--muted);}
@@ -136,6 +144,17 @@
         .badge-rope { background: #E1EEF0; color: #2E6B78; border: 1px solid #BEDBE0; }
 
         .empty-history { text-align: center; color: var(--muted); padding: 40px 0; font-size: 14px; }
+
+        /* 📈 월별 통계 */
+        .stat-month-block { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; margin-bottom: 12px; overflow: hidden; }
+        .stat-month-block summary { padding: 12px 15px; font-weight: 700; color: var(--fire-dark); cursor: pointer; display: flex; justify-content: space-between; align-items: center; list-style: none; }
+        .stat-month-block summary::-webkit-details-marker { display: none; }
+        .stat-month-total { font-size: 12px; font-weight: 700; color: var(--muted); }
+        .stat-month-body { padding: 4px 15px 12px; border-top: 1px solid var(--line); }
+        .stat-month-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 13px; border-bottom: 1px dashed var(--line); }
+        .stat-month-row:last-child { border-bottom: none; }
+        .stat-month-station { color: var(--ink); font-weight: 600; }
+        .stat-month-value { color: var(--muted); font-weight: 700; }
 
         /* 우측 지도 */
         #map { flex: 1; height: 100%; position: relative; }
@@ -156,6 +175,30 @@
         #image-viewer img { max-width: 90%; max-height: 80%; border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
         #image-viewer .close-btn { position: absolute; top: 20px; right: 30px; color: white; font-size: 30px; font-weight: bold; cursor: pointer; }
         #image-viewer .viewer-label { color: white; font-size: 16px; margin-top: 15px; background: rgba(0,0,0,0.5); padding: 5px 15px; border-radius: 999px; }
+
+        /* 🧭 로드뷰 모달 (크게 보기) */
+        .roadview-modal {
+            display: none; position: fixed; inset: 0; z-index: 9998;
+            background: rgba(24,18,14,0.6); backdrop-filter: blur(4px);
+            align-items: center; justify-content: center; padding: 20px;
+        }
+        .roadview-modal.active { display: flex; }
+        .roadview-modal-card {
+            background: var(--surface); border-radius: 14px; overflow: hidden;
+            width: 100%; max-width: 760px; box-shadow: 0 12px 40px rgba(0,0,0,0.35);
+        }
+        .roadview-modal-header { display: flex; justify-content: space-between; align-items: flex-start; padding: 16px 20px; border-bottom: 1px solid var(--line); }
+        .roadview-modal-title { font-size: 16px; font-weight: 700; color: var(--ink); }
+        .roadview-modal-subtitle { font-size: 12px; color: var(--muted); margin-top: 4px; }
+        .roadview-modal-close { background: none; border: none; font-size: 24px; line-height: 1; color: var(--muted); cursor: pointer; padding: 2px 6px; }
+        .roadview-modal-close:hover { color: var(--ink); }
+        #map-roadview-box { width: 100%; height: 62vh; max-height: 520px; min-height: 260px; background: #ddd; }
+
+        @media screen and (max-width: 768px) {
+            .roadview-modal { padding: 0; }
+            .roadview-modal-card { max-width: 100%; height: 100%; border-radius: 0; display: flex; flex-direction: column; }
+            #map-roadview-box { flex: 1; height: auto; max-height: none; }
+        }
 
         /* 📱 모바일 최적화 (스마트폰 크기일 때 위아래 배치) */
         @media screen and (max-width: 768px) {
@@ -234,9 +277,10 @@
         <div class="tab-menu">
             <div class="tab-btn active" data-tab="form" onclick="switchTab('form')">📝 폼</div>
             <div class="tab-btn" data-tab="history" onclick="switchTab('history')">📋 실적</div>
-            <div class="tab-btn" data-tab="repairs" onclick="switchTab('repairs')">🛠️ 보수/소요</div>
+            <div class="tab-btn" data-tab="repairs" onclick="switchTab('repairs')">🛠️ 보수</div>
             <div class="tab-btn" data-tab="needs" onclick="switchTab('needs')">🚨 요점검</div>
             <div class="tab-btn" data-tab="status" onclick="switchTab('status')">📊 상태</div>
+            <div class="tab-btn" data-tab="stats" onclick="switchTab('stats')">📈 통계</div>
         </div>
 
         <!-- 뷰 1: 점검 폼 -->
@@ -266,16 +310,6 @@
                             <span>내부 사진</span>
                         </div>
                     </div>
-                </div>
-
-                <!-- 🧭 로드뷰 영역 -->
-                <div class="roadview-box">
-                    <div class="roadview-header">
-                        <span>🧭 로드뷰로 현장 확인</span>
-                        <button type="button" id="roadview-toggle-btn" onclick="toggleRoadview()">로드뷰 보기</button>
-                    </div>
-                    <div id="roadview"></div>
-                    <div id="roadview-empty">이 위치 주변에는 로드뷰 정보가 없습니다.</div>
                 </div>
 
                 <!-- 이설 좌표 직접 입력 영역 -->
@@ -384,6 +418,11 @@
             <div id="status-container"></div>
         </div>
 
+        <!-- 뷰 6-1: 월별 통계 -->
+        <div id="view-stats" class="view-section">
+            <div id="stats-container"></div>
+        </div>
+
         <!-- 뷰 6: 소방서 세부 목록 -->
         <div id="view-list" class="view-section">
             <div id="list-container"></div>
@@ -398,6 +437,20 @@
         <span class="close-btn">&times;</span>
         <img id="viewer-img" src="" alt="확대 이미지" onclick="event.stopPropagation()">
         <div class="viewer-label" id="viewer-label"></div>
+    </div>
+
+    <!-- 🧭 로드뷰 모달 -->
+    <div id="roadview-modal" class="roadview-modal" onclick="closeMapRoadview()">
+        <div class="roadview-modal-card" onclick="event.stopPropagation()">
+            <div class="roadview-modal-header">
+                <div>
+                    <div class="roadview-modal-title" id="roadview-modal-title">로드뷰</div>
+                    <div class="roadview-modal-subtitle" id="roadview-modal-subtitle"></div>
+                </div>
+                <button type="button" class="roadview-modal-close" onclick="closeMapRoadview()">&times;</button>
+            </div>
+            <div id="map-roadview-box" class="roadview-modal-body"></div>
+        </div>
     </div>
 
     <script type="module">
@@ -487,7 +540,8 @@
         // ===== Firebase 연동 끝 =====
 
         var map, infowindow;
-        var roadviewInstance, roadviewClient;
+        var mapRoadviewInstance, mapRoadviewClient;
+        var markerImgOk, markerImgNone, markerImgRepair;
         var historyData = [];
         var markerMap = {}; 
         var overlayMap = {}; 
@@ -495,9 +549,39 @@
         // 페이지를 열면 서버(Firestore)에 저장된 점검 기록을 불러옵니다.
         loadHistoryFromFirestore().then(function(records) {
             historyData = records;
+            refreshMarkerColors();
         }).catch(function(err) {
             console.error('점검 기록을 불러오지 못했습니다:', err);
         });
+
+        // 🔴🟡🟢 마커 색상 + 라벨의 최근 점검일자를 최신 historyData 기준으로 갱신
+        // (미점검: 빨강, 교체/수리 필요: 노랑, 정상 점검 완료: 초록)
+        function refreshMarkerColors() {
+            equipmentList.forEach(function(eq) {
+                var marker = markerMap[eq.id];
+                var overlay = overlayMap[eq.id];
+                if (!marker && !overlay) return;
+
+                var records = historyData.filter(function(h) { return h.id === eq.id; });
+                var dateLabel = '미점검';
+                var img = markerImgNone;
+
+                if (records.length > 0) {
+                    var latest = records[0];
+                    dateLabel = latest.date;
+                    var needsRepair = (latest.needBox > 0 || latest.needRing > 0 || latest.needVest > 0 || latest.needRope > 0 || latest.status.indexOf('정상') === -1);
+                    img = needsRepair ? markerImgRepair : markerImgOk;
+                }
+
+                if (marker && img) marker.setImage(img);
+                if (overlay) {
+                    overlay.setContent(
+                        '<div class="marker-label">' + eq.id +
+                        '<br><span style="font-weight:400; font-size:10px;">' + dateLabel + '</span></div>'
+                    );
+                }
+            });
+        }
 
         var stationNames = ['제주', '서귀포', '서부', '동부'];
         
@@ -986,6 +1070,7 @@
             if(tabName === 'repairs') renderRepairs();
             if(tabName === 'needs') renderNeeds();
             if(tabName === 'status') renderStatus();
+            if(tabName === 'stats') renderMonthlyStats();
 
             // 📱 모바일: 목록 탭들은 전체화면으로, "폼" 탭은 지도가 보이는 화면으로
             if (isMobile()) {
@@ -1009,11 +1094,23 @@
             try {
                 await deleteInspectionFromFirestore(docId);
                 historyData = historyData.filter(function(r) { return r.docId !== docId; });
+                refreshMarkerColors();
                 renderHistory();
             } catch (err) {
                 console.error(err);
                 alert('❌ 삭제 중 오류가 발생했습니다. 인터넷 연결을 확인해주세요.\n\n(' + err.message + ')');
             }
+        }
+
+        // 🟢🟡🔴🟠 점검 상태 문구를 보고 색상 구분용 클래스를 정함
+        function getStatusClass(statusText) {
+            statusText = statusText || '';
+            if (statusText.indexOf('정상') !== -1) return 'status-ok';
+            var hasRepair = statusText.indexOf('수리') !== -1;
+            var hasLoss = statusText.indexOf('망실') !== -1;
+            if (hasRepair && hasLoss) return 'status-mixed';
+            if (hasLoss) return 'status-loss';
+            return 'status-repair';
         }
 
         function renderHistory() {
@@ -1045,10 +1142,12 @@
                     photoHtml += `</div>`;
                 }
                 
+                var statusClass = getStatusClass(item.status);
+
                 html += `
-                    <div class="history-item">
+                    <div class="history-item ${statusClass}">
                         <div class="h-header">
-                            <span class="h-title">${item.id}</span>
+                            <span class="h-title ${statusClass}">${item.id}</span>
                             <span style="display:flex; align-items:center; gap:8px;">
                                 <span class="h-date">${item.date}</span>
                                 <button class="btn-delete" onclick="deleteRecord('${item.docId}')" title="이 기록 삭제">🗑</button>
@@ -1056,7 +1155,7 @@
                         </div>
                         <div class="h-info">📍 위치: ${item.location}</div>
                         <div class="h-info">👤 작성자: <strong>${item.author}</strong></div>
-                        <span class="h-status">${item.status}</span>
+                        <span class="h-status ${statusClass}">${item.status}</span>
                         ${badgeHtml}
                         ${memoHtml}
                         ${photoHtml}
@@ -1077,7 +1176,7 @@
             });
 
             var repairItems = Object.values(latestRecords).filter(function(r) {
-                return (r.needBox > 0 || r.needRing > 0 || r.needVest > 0 || r.needRope > 0 || r.status !== '정상');
+                return (r.needBox > 0 || r.needRing > 0 || r.needVest > 0 || r.needRope > 0 || r.status.indexOf('정상') === -1);
             });
 
             var totBox = 0, totRing = 0, totVest = 0, totRope = 0;
@@ -1231,6 +1330,64 @@
             container.innerHTML = html;
         }
 
+        // 📈 월별 통계: 소방서별로 몇 개소를, 몇 회 점검했는지 월 단위로 집계
+        function renderMonthlyStats() {
+            var container = document.getElementById('stats-container');
+
+            if (historyData.length === 0) {
+                container.innerHTML = '<div class="empty-history">아직 점검 기록이 없습니다.</div>';
+                return;
+            }
+
+            var stations = ['제주', '서귀포', '서부', '동부'];
+            var monthGroups = {}; // { 'YYYY-MM': { 제주: {count, ids:{}}, ... } }
+
+            historyData.forEach(function(rec) {
+                if (!rec.date) return;
+                var ym = rec.date.substring(0, 7); // 'YYYY-MM'
+                if (!monthGroups[ym]) {
+                    monthGroups[ym] = {};
+                    stations.forEach(function(st) { monthGroups[ym][st] = { count: 0, ids: {} }; });
+                }
+                var eq = equipmentList.find(function(e) { return e.id === rec.id; });
+                var st = eq ? eq.station : null;
+                if (st && monthGroups[ym][st]) {
+                    monthGroups[ym][st].count += 1;
+                    monthGroups[ym][st].ids[rec.id] = true;
+                }
+            });
+
+            var months = Object.keys(monthGroups).sort().reverse(); // 최신 달 먼저
+
+            var html = '';
+            months.forEach(function(ym, idx) {
+                var parts = ym.split('-');
+                var yearPart = parts[0];
+                var monthPart = parseInt(parts[1], 10);
+                var totalCount = 0, totalEquip = 0;
+
+                var rowsHtml = '';
+                stations.forEach(function(st) {
+                    var data = monthGroups[ym][st];
+                    var equipCount = Object.keys(data.ids).length;
+                    totalCount += data.count;
+                    totalEquip += equipCount;
+                    rowsHtml += '<div class="stat-month-row">' +
+                        '<span class="stat-month-station">' + st + '소방서</span>' +
+                        '<span class="stat-month-value">' + equipCount + '개소 · ' + data.count + '회</span>' +
+                        '</div>';
+                });
+
+                html += '<details class="stat-month-block"' + (idx === 0 ? ' open' : '') + '>' +
+                    '<summary>' + yearPart + '년 ' + monthPart + '월' +
+                    '<span class="stat-month-total">' + totalEquip + '개소 · ' + totalCount + '회</span></summary>' +
+                    '<div class="stat-month-body">' + rowsHtml + '</div>' +
+                    '</details>';
+            });
+
+            container.innerHTML = html;
+        }
+
         function showStationList(stationName) {
             switchTab('list');
             var container = document.getElementById('list-container');
@@ -1282,56 +1439,6 @@
             }
         }
 
-        function toggleRoadview() {
-            var container = document.getElementById('roadview');
-            var emptyMsg = document.getElementById('roadview-empty');
-            var btn = document.getElementById('roadview-toggle-btn');
-
-            if (container.style.display === 'block') {
-                container.style.display = 'none';
-                emptyMsg.style.display = 'none';
-                btn.innerText = '로드뷰 보기';
-                return;
-            }
-
-            var lat = parseFloat(document.getElementById('input-lat').value);
-            var lng = parseFloat(document.getElementById('input-lng').value);
-            if (isNaN(lat) || isNaN(lng)) { alert('위치 좌표를 확인할 수 없습니다.'); return; }
-
-            var position = new kakao.maps.LatLng(lat, lng);
-
-            container.style.display = 'block';
-            emptyMsg.style.display = 'none';
-            btn.innerText = '⏳ 확인 중...';
-            btn.disabled = true;
-
-            if (!roadviewInstance) roadviewInstance = new kakao.maps.Roadview(container);
-            if (!roadviewClient) roadviewClient = new kakao.maps.RoadviewClient();
-
-            roadviewClient.getNearestPanoId(position, 50, function(panoId) {
-                btn.disabled = false;
-                if (panoId === null) {
-                    container.style.display = 'none';
-                    emptyMsg.style.display = 'block';
-                    btn.innerText = '로드뷰 보기';
-                } else {
-                    roadviewInstance.setPanoId(panoId, position);
-                    btn.innerText = '로드뷰 닫기';
-                    setTimeout(function() { roadviewInstance.relayout(); }, 50);
-                }
-            });
-        }
-
-        function resetRoadview() {
-            var container = document.getElementById('roadview');
-            var emptyMsg = document.getElementById('roadview-empty');
-            var btn = document.getElementById('roadview-toggle-btn');
-            container.style.display = 'none';
-            emptyMsg.style.display = 'none';
-            btn.innerText = '로드뷰 보기';
-            btn.disabled = false;
-        }
-
         function moveToMap(lat, lng, id) {
             var pos = new kakao.maps.LatLng(lat, lng);
             
@@ -1366,7 +1473,6 @@
                 document.getElementById('preview-int').src = '';
 
                 loadRecentPhotos(id);
-                resetRoadview();
                 openMobileForm();
             }
         }
@@ -1427,6 +1533,18 @@
             var options = { center: new kakao.maps.LatLng(33.37, 126.55), level: 10 };
             map = new kakao.maps.Map(container, options);
 
+            // 🔴🟡🟢 상태별 마커 색상(핀) 이미지 만들기
+            function makePinImage(hex) {
+                var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="30" height="38" viewBox="0 0 30 38">' +
+                    '<path d="M15 0C6.7 0 0 6.7 0 15c0 11 15 23 15 23s15-12 15-23C30 6.7 23.3 0 15 0z" fill="' + hex + '" stroke="#ffffff" stroke-width="1.5"/>' +
+                    '<circle cx="15" cy="15" r="6" fill="#ffffff"/></svg>';
+                var url = 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
+                return new kakao.maps.MarkerImage(url, new kakao.maps.Size(30, 38), { offset: new kakao.maps.Point(15, 38) });
+            }
+            markerImgOk = makePinImage('#2E8B57');      // 초록: 정상 점검 완료
+            markerImgNone = makePinImage('#D0261B');    // 빨강: 미점검
+            markerImgRepair = makePinImage('#F2B705');  // 노랑: 교체/수리 필요
+
             var clusterer = new kakao.maps.MarkerClusterer({ map: map, averageCenter: true, minLevel: 8 });
             var markers = [];
             var overlays = []; 
@@ -1434,7 +1552,7 @@
 
             equipmentList.forEach(function(eq) {
                 var pos = new kakao.maps.LatLng(eq.lat, eq.lng);
-                var marker = new kakao.maps.Marker({ position: pos });
+                var marker = new kakao.maps.Marker({ position: pos, image: markerImgNone });
                 var labelOverlay = new kakao.maps.CustomOverlay({
                     position: pos, content: '<div class="marker-label">' + eq.id + '</div>', yAnchor: -0.4
                 });
@@ -1444,7 +1562,17 @@
                 overlays.push(labelOverlay); 
 
                 kakao.maps.event.addListener(marker, 'click', function() {
-                    infowindow.setContent('<div class="info-title">' + eq.id + '</div>');
+                    var records = historyData.filter(function(h) { return h.id === eq.id; });
+                    var dateLabel = records.length > 0 ? records[0].date : '미점검';
+
+                    infowindow.setContent(
+                        '<div style="padding:8px; min-width:170px;">' +
+                            '<div style="font-weight:700; font-size:13px; margin-bottom:4px;">' + eq.id + '</div>' +
+                            '<div style="font-size:11px; color:#666; margin-bottom:6px;">최근 점검일: ' + dateLabel + '</div>' +
+                            '<button onclick="mapRoadviewOpen(\'' + eq.id + '\', ' + eq.lat + ', ' + eq.lng + ')" ' +
+                                'style="width:100%; padding:6px; border:none; border-radius:6px; background:#EA6A12; color:#fff; font-weight:700; font-size:12px; cursor:pointer;">🧭 로드뷰 보기</button>' +
+                        '</div>'
+                    );
                     infowindow.open(map, marker);
                     moveToMap(eq.lat, eq.lng, eq.id);
                 });
@@ -1452,6 +1580,7 @@
             });
 
             clusterer.addMarkers(markers);
+            refreshMarkerColors();
 
             function updateLabelVisibility() {
                 var level = map.getLevel();
@@ -1461,6 +1590,65 @@
             updateLabelVisibility();
             kakao.maps.event.addListener(map, 'zoom_changed', updateLabelVisibility);
         });
+
+        // 📏 두 좌표 사이의 거리(m)를 계산 (하버사인 공식)
+        function distanceMeters(lat1, lng1, lat2, lng2) {
+            var R = 6371000;
+            var toRad = function(deg) { return deg * Math.PI / 180; };
+            var dLat = toRad(lat2 - lat1);
+            var dLng = toRad(lng2 - lng1);
+            var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+            var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return R * c;
+        }
+
+        // 🧭 큰 모달창으로 로드뷰 보여주기 (없으면 가까운 주변 로드뷰로 대체)
+        function mapRoadviewOpen(id, lat, lng) {
+            var modal = document.getElementById('roadview-modal');
+            var box = document.getElementById('map-roadview-box');
+            var titleEl = document.getElementById('roadview-modal-title');
+            var subEl = document.getElementById('roadview-modal-subtitle');
+
+            titleEl.innerText = id + ' 주변 로드뷰';
+            subEl.innerText = '가장 가까운 촬영 지점을 찾는 중...';
+            box.innerHTML = '';
+            modal.classList.add('active');
+
+            var position = new kakao.maps.LatLng(lat, lng);
+            if (!mapRoadviewClient) mapRoadviewClient = new kakao.maps.RoadviewClient();
+
+            mapRoadviewClient.getNearestPanoId(position, 300, function(panoId) {
+                if (panoId === null) {
+                    subEl.innerText = '이 주변 300m 이내에는 로드뷰 정보가 없습니다.';
+                    box.innerHTML = '<div style="display:flex; align-items:center; justify-content:center; height:100%; color:#888; font-size:13px;">로드뷰 정보가 없습니다.</div>';
+                    return;
+                }
+
+                mapRoadviewInstance = new kakao.maps.Roadview(box);
+                mapRoadviewInstance.setPanoId(panoId, position);
+
+                kakao.maps.event.addListener(mapRoadviewInstance, 'position_changed', function() {
+                    var actual = mapRoadviewInstance.getPosition();
+                    var dist = Math.round(distanceMeters(lat, lng, actual.getLat(), actual.getLng()));
+                    if (dist <= 15) {
+                        subEl.innerText = '시설 바로 앞 촬영 지점입니다.';
+                    } else {
+                        subEl.innerText = '시설에서 약 ' + dist + 'm 떨어진 가장 가까운 촬영 지점입니다.';
+                    }
+                });
+
+                setTimeout(function() { mapRoadviewInstance.relayout(); }, 60);
+            });
+        }
+
+        function closeMapRoadview() {
+            document.getElementById('roadview-modal').classList.remove('active');
+            document.getElementById('map-roadview-box').innerHTML = '';
+        }
+
+        window.mapRoadviewOpen = mapRoadviewOpen;
+        window.closeMapRoadview = closeMapRoadview;
 
         async function saveData() {
             var id = document.getElementById('label-id').innerText;
@@ -1534,6 +1722,7 @@
                 newRecord.docId = newDocId;
 
                 historyData.unshift(newRecord);
+                refreshMarkerColors();
 
                 var alertMsg = '✅ [' + id + '] 점검결과 저장 완료!\n\n작성자 : ' + author + '\n상태 : ' + statusText;
                 if(needBox > 0 || needRing > 0 || needVest > 0 || needRope > 0) {
@@ -1575,7 +1764,6 @@
         window.closeImageViewer = closeImageViewer;
         window.moveToMap = moveToMap;
         window.searchEquipment = searchEquipment;
-        window.toggleRoadview = toggleRoadview;
         window.deleteRecord = deleteRecord;
         window.closeMobileForm = closeMobileForm;
 
